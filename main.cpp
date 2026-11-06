@@ -7,6 +7,21 @@
 
 struct Vec2 {
 	float x, y;
+
+	float length() {
+		return std::hypot(x, y);
+	}
+	void normalise() {
+		float len = length();
+		//if (IsNearlyZero(len)) {
+		//	return;
+		//}
+		if (!len) {
+			return;
+		}
+		this->x /= len;
+		this->y /= len;
+	}
 };
 
 //std::vector<char> load_file(std::string_view path) {
@@ -77,7 +92,7 @@ struct input_state {
 	bool move_left;
 	bool move_right;
 };
-input_state handle_input(float dt, Vec2& player_pos) {
+input_state handle_input() {
 
 	//bool IsKeyPressed(int key);                             // Check if key has been pressed once
 	//bool IsKeyPressedRepeat(int key);                       // Check if key has been pressed again
@@ -107,37 +122,64 @@ input_state handle_input(float dt, Vec2& player_pos) {
 	return input;
 }
 
-void update(Vec2& player_pos, input_state input) {
-	
-	// get the current tile the player is in
-	int tile_x = player_pos.x / TILE_SIZE;
-	int tile_y = player_pos.y / TILE_SIZE;
+struct Player {
+	Vec2 world_pos;
+	Vec2 velocity;
+	float size;
+};
 
-	// understand request movement
-	int new_y = player_pos.y;
-	int new_x = player_pos.x;
+void update(float dt, Player& player, input_state input) {
+
+	// intended movement
+	Vec2 candidate{};
+
+
+	// combine candidate intended movement into vector [-1,1] so opposites naturally cancel to 0,
 	if (input.move_down == true) {
-		new_y -= 1;
+		//candidate.y += player.velocity.y * dt;
+		candidate.y += 1;
 	}
 	if (input.move_up == true) {
-		new_y += 1;
+		//candidate.y -= player.velocity.y * dt;
+		candidate.y -= 1;
 	}
 	if (input.move_left == true) {
-		new_x -= 1;
+		candidate.x -= 1;
 	}
 	if (input.move_right == true) {
-		new_x += 1;
+		candidate.x += 1;
 	}
+	// normalise it so we get even movement across diagonal, 
+	candidate.normalise();
 
-	if (new_y > SCREEN_HEIGHT || new_x > SCREEN_WIDTH
-		|| new_y < SCREEN_HEIGHT || new_x < SCREEN_WIDTH) {
+
+	std::cout << candidate.x << " " << candidate.y << "\n";
+	float new_x = player.world_pos.x;
+	new_x += candidate.x * player.velocity.x * dt;
+	float new_y = player.world_pos.y;
+	new_y += candidate.y * player.velocity.y * dt;
+	int tile_x = static_cast<int>(std::floor(static_cast<float>(new_x / TILE_SIZE)));
+	int tile_y = static_cast<int>(std::floor(static_cast<float>(new_y / TILE_SIZE)));
+
+	Rectangle box{
+		candidate.x, candidate.x + player.size,
+		candidate.y, candidate.y + player.size
+	};
+	
+	if (new_y > SCREEN_HEIGHT-1 || new_x> SCREEN_WIDTH-1 || new_x < 0 || new_y < 0) {
 		return;
 	}
-	if (grid[new_x][new_y] == 1) {
+		
+	if (grid[tile_y][tile_x] == 1) {
+		std::cout << "NOT ALLOWED, tile x :" << tile_x << " tile y: " << tile_y << "\n";
 		return;
 	}
-	player_pos.x = new_x;
-	player_pos.y = new_y;
+	//std::cout << new_x << " " << new_y << "\n";
+	player.world_pos.x = new_x;
+	player.world_pos.y = new_y;
+
+	//std::cout << "new x : " << new_x << " new y : " << new_y << "\n";
+
 	// calculate what new position would be
 
 	// see if allowed
@@ -147,6 +189,8 @@ void update(Vec2& player_pos, input_state input) {
 	// player AABB
 
 }
+
+
 int main() {
 	SetConfigFlags(FLAG_VSYNC_HINT);
 
@@ -170,9 +214,11 @@ int main() {
 	//std::vector<char> arena = load_file("assets\\arena.csv");
 	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
 
-	int player_size = 32;
-	Vec2 player_pos{20,20};
-
+	float player_size = 32;
+	Player player;
+	player.world_pos = { 100,100 };
+	player.velocity = { 350,350 };
+	player.size = 32.f;
 
 	Camera2D camera = { 0 };
 	camera.zoom = 1.f;
@@ -180,10 +226,11 @@ int main() {
 	Vec2 rect{ 20,40 };
 	while (!WindowShouldClose()) {
 
+		auto dt = GetFrameTime();
 		// handle_input()
-		input_state input = handle_input(0,player_pos);
+		input_state input = handle_input();
 		// update()
-		update(player_pos, input);
+		update(dt, player, input);
 		//Draw
 
 		BeginDrawing();
@@ -192,7 +239,16 @@ int main() {
 		//DrawRectangleLines(50,50, TILE_SIZE, TILE_SIZE, BLUE);
 		//draw_arena();
 		draw_grid();
-		DrawRectangle(player_pos.x, player_pos.y, player_size, player_size, RAYWHITE);
+		DrawRectangleV(*reinterpret_cast<Vector2*>(&player.world_pos), { player_size,player_size }, BLUE);
+		//DrawRectangle(player.world_pos.x, player.world_pos.y, player_size, player_size, BLUE);/**/
+		DrawRectangleLines(player.world_pos.x, player.world_pos.y, player_size, player_size, RAYWHITE);
+		//int l=;
+		//int r;
+		//int t;
+		//int b;
+		//int width = r - l;
+		////int height = t - b;
+		//DrawRectangleLines(width, height, player_size, player_size, RAYWHITE);
 		//DrawRectangle(100, 100, 600, 400, { 100, 100, 100, 255 });
 		EndMode2D();
 		EndDrawing();
