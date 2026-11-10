@@ -2,12 +2,12 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <fstream>
-#include <sstream>
+#include <cassert>
+#include "arena.h"
+
 
 constexpr int SCREEN_WIDTH = 1280;
 constexpr int SCREEN_HEIGHT = 704;
-constexpr int TILE_SIZE = 32;
 constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE; // screen x / tile
 constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
 constexpr Color GRID_COLOUR = { 48, 59, 72, 255 };
@@ -36,6 +36,19 @@ struct Vec2 {
 };
 
 
+struct input_state {
+	bool move_up;
+	bool move_down;
+	bool move_left;
+	bool move_right;
+};
+
+struct Player {
+	Vec2 world_pos;
+	Vec2 velocity;
+	float size;
+};
+
 
 void draw_arena() {
 	for (int i = 0; i < ARENA_HEIGHT; i++) {
@@ -44,58 +57,12 @@ void draw_arena() {
 			// y = row * 50
 			int x = j * TILE_SIZE;
 			int y = i * TILE_SIZE;
-			
 			DrawRectangleLines(x, y, TILE_SIZE, TILE_SIZE, BLUE);
 		}
 	}
 	return;
 }
-struct Arena {
-	
-	int cols;
-	int rows;
-	std::vector<std::vector<int>> grid;
-	int map_height;
-	int map_width;
-	// each row has cols entries. row = y, col = x.
-	Arena(std::string csv_path) {
-		auto res = parse_csv(csv_path);
-		if (!res.has_value()) {
-			// error
-			throw std::exception("csv parse failed");
-		}
-		// assume rows and cols?
-		auto _grid = res.value();
-		// todo - copy? 
-		grid = _grid;
-		int r = grid.size();
-		int c = grid[r - 1].size(); // assume size is even across all  rows..
 
-		cols = c; rows = r;
-		map_height = rows * TILE_SIZE;
-		map_width = cols * TILE_SIZE;
-
-	}
-	Arena(int cols_, int rows_) : cols(cols_), rows(rows_), grid(rows, std::vector<int>(cols, 0)) {
-		map_height = rows * TILE_SIZE;
-		map_width = cols * TILE_SIZE;
-	};
-	int tile(int r, int c) {
-		if (r >= rows || r < 0 || c >= cols || c < 0) {
-			//__debugbreak();
-			return -1;
-		}
-		return grid[r][c];
-	}
-	bool isWall(int _row, int _col) {
-		int tile_idx = tile(_row, _col);
-		return tile_idx == 1 ? true : false;
-	}
-	//bool isObstacle(int tile_idx) {
-	//	return tile_idx in set of obstacles
-	//}
-	//std::vector<std::vector<int>> grid(22, std::vector<int>(40, 0));
-};
 void draw_grid(Arena& arena) {
 	for (int i = 0; i < arena.rows; i++) {
 		for (int j = 0; j < arena.cols; j++) {
@@ -114,24 +81,18 @@ void draw_grid(Arena& arena) {
 
 	// <= because we want to draw edges
 	for (int i = 0; i <= arena.rows; i++) {
-		DrawLine(0, i * TILE_SIZE,arena.map_width, i * TILE_SIZE,GRID_COLOUR);
+		DrawLine(0, i * TILE_SIZE, arena.map_width, i * TILE_SIZE, GRID_COLOUR);
 	}
 
 	for (int j = 0; j <= arena.cols; j++) {
-		DrawLine(j * TILE_SIZE, 0,j * TILE_SIZE, arena.map_height,GRID_COLOUR);
+		DrawLine(j * TILE_SIZE, 0, j * TILE_SIZE, arena.map_height, GRID_COLOUR);
 	}
 
 	DrawRectangleLines(0, 0, arena.map_width, arena.map_height, { 141, 169, 196, 255 });
-}
-
-struct input_state {
-	bool move_up;
-	bool move_down;
-	bool move_left;
-	bool move_right;
 };
-input_state handle_input() {
 
+
+input_state handle_input() {
 	//bool IsKeyPressed(int key);                             // Check if key has been pressed once
 	//bool IsKeyPressedRepeat(int key);                       // Check if key has been pressed again
 	//bool IsKeyDown(int key);                                // Check if key is being pressed
@@ -160,18 +121,12 @@ input_state handle_input() {
 	return input;
 }
 
-struct Player {
-	Vec2 world_pos;
-	Vec2 velocity;
-	float size;
-};
-#include <cassert>
+
 
 void update(Arena& arena, float dt, Player& player, input_state input) {
 
 	// intended movement
 	Vec2 candidate{};
-
 
 	// combine candidate intended movement into vector [-1,1] so opposites naturally cancel to 0,
 	if (input.move_down == true) {
@@ -227,23 +182,6 @@ void update(Arena& arena, float dt, Player& player, input_state input) {
 	player.world_pos.y = new_y;
 
 }
-
-//std::optional<std::vector<std::vector<int>>> parse_csv(std::string path) {
-//	std::ifstream file(path);
-//	if (file.is_open()) {
-//		return std::nullopt;
-//	}
-//
-//	std::vector<std::vector<int>> grid;
-//
-//	std::string line;
-//	while(std::getline(file, line)) {
-//		line += "\n";
-//	}
-//
-//	return line;
-//
-//}
 
 int main() {
 	//auto str = parse_csv("arena.csv");

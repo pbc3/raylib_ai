@@ -53,7 +53,7 @@ std::optional<std::vector<std::vector<int>>> parse_csv(std::string path) {
 		// take all the numbers
 		std::vector<int> tiles = parse_ints_from_line(line);
 		//grid[row_idx] = tiles;
-		grid.push_back(tiles);
+		grid.push_back(std::move(tiles));
 		row_idx++;
 	}
 	return grid;
