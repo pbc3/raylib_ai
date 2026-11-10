@@ -2,12 +2,23 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
+
+constexpr int SCREEN_WIDTH = 1280;
+constexpr int SCREEN_HEIGHT = 704;
+constexpr int TILE_SIZE = 32;
+constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE; // screen x / tile
+constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
+constexpr Color GRID_COLOUR = { 48, 59, 72, 255 };
+// tile centring, possibly needed.
+//constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
+//constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
 
 
 
 struct Vec2 {
 	float x, y;
-
 	float length() {
 		return std::hypot(x, y);
 	}
@@ -23,90 +34,6 @@ struct Vec2 {
 		this->y /= len;
 	}
 };
-#include <fstream>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <charconv>
-
-std::vector<int> parse_ints_from_line(std::string_view line) {
-	std::vector<int> vals;
-
-	while (!line.empty()) {
-		while (!line.empty() &&
-			(std::isspace(static_cast<unsigned char>(line.front())) ||
-				std::isalpha(static_cast<unsigned char>(line.front())) ||
-				(std::ispunct(static_cast<unsigned char>(line.front())) && line.front() != '-')))
-		{
-			line.remove_prefix(1);
-		}
-
-		if (line.empty()) {
-			break;
-		}
-
-		int value;
-		auto [ptr, errorcode] = std::from_chars(line.data(), line.data() + line.size(), value);
-
-		if ((errorcode != std::errc())) {
-			// TODO - HANDLE
-			break;
-		}
-		vals.push_back(value);
-
-		// advance the ptr past what we just parsed
-		line.remove_prefix(ptr - line.data());
-	}
-	return vals;
-}
-std::optional<std::vector<std::vector<int>>> parse_csv(std::string path) {
-	std::ifstream file(path);
-	if (!file.is_open()) {
-		return std::nullopt;
-	}
-
-	std::vector<std::vector<int>> grid;
-
-	//std::string total;
-	////while (std::getline(file, line)) {
-
-	////	total += line + "\n";
-	////}
-
-
-	int row_idx = 0;
-	std::string line;
-
-	while (std::getline(file, line)) {
-		// take all the numbers
-		std::vector<int> tiles = parse_ints_from_line(line);
-		//grid[row_idx] = tiles;
-		grid.push_back(tiles);
-		row_idx++;
-	}
-	return grid;
-
-}
-
-//std::vector<char> load_file(std::string_view path) {
-//
-//	// read file size
-//
-//	// virtualloc that ..? 
-//
-//	// return
-//}
-
-constexpr int SCREEN_WIDTH = 1280;
-constexpr int SCREEN_HEIGHT = 704;
-constexpr int TILE_SIZE = 32;
-constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE; // screen x / tile
-constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
-constexpr Color GRID_COLOUR = { 48, 59, 72, 255 };
-
-// tile centring, possibly needed.
-//constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
-//constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
 
 
 
