@@ -247,20 +247,26 @@ int main() {
 
 	Camera2D camera = { 0 };
 	camera.zoom = 1.f;
-
+	camera.offset = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+	
 	Vec2 rect{ 20,40 };
 	while (!WindowShouldClose()) {
-
+		
 		auto dt = GetFrameTime();
 		// handle_input()
 		input_state input = handle_input();
 		// update()
+
+
 		update(arena,dt, player, input);
 		//Draw
 		//camera.target = *reinterpret_cast<Vector2*>(&player.world_pos);
 		BeginDrawing();
 		ClearBackground({ 32, 38, 48, 255 });
 		BeginMode2D(camera);
+		Vector2 player_target = { player.world_pos.x + (player.size / 2), player.world_pos.y + (player.size / 2) };
+		camera.target = player_target;
+
 		//DrawRectangleLines(50,50, TILE_SIZE, TILE_SIZE, BLUE);
 		//draw_arena();
 		draw_grid(arena);

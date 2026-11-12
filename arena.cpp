@@ -25,13 +25,13 @@ Arena::Arena(const std::string& csv_path) {
 	map_width = cols * TILE_SIZE;
 }
 bool Arena::isWall(int _row, int _col) {
-	int tile_idx = tile(_row, _col);
-	return tile_idx == 1 ? true : false;
+	int tile_val = tile(_row, _col);
+	return tile_val != 0 ? true : false;
 }
 int Arena::tile(int r, int c) {
 	if (r >= rows || r < 0 || c >= cols || c < 0) {
 		//__debugbreak();
-		return -1;
+		return -1; // treat oob as a wall
 	}
 	return grid[r][c];
 }
