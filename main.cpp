@@ -125,61 +125,89 @@ input_state handle_input() {
 
 void update(Arena& arena, float dt, Player& player, input_state input) {
 
+	// todo - movement needs more work. what if the player can touch more than 4 tiles at once?
+	
+
 	// intended movement
 	Vec2 candidate{};
 
 	// combine candidate intended movement into vector [-1,1] so opposites naturally cancel to 0,
-	if (input.move_down == true) {
+	if (input.move_down) {
 		//candidate.y += player.velocity.y * dt;
 		candidate.y += 1;
 	}
-	if (input.move_up == true) {
+	if (input.move_up) {
 		//candidate.y -= player.velocity.y * dt;
 		candidate.y -= 1;
 	}
-	if (input.move_left == true) {
+	if (input.move_left) {
 		candidate.x -= 1;
 	}
-	if (input.move_right == true) {
+	if (input.move_right) {	
 		candidate.x += 1;
 	}
 	// normalise it so we get even movement across diagonal, 
 	candidate.normalise();
 
 
+	// current vertical tile
+	int c_top = static_cast<int>(std::floor(static_cast<float>(player.world_pos.y / TILE_SIZE)));
+	int c_bottom = static_cast<int>(std::floor(static_cast<float>((player.world_pos.y + player.size - 1) / TILE_SIZE)));
+
+	// new horizontal movement
 	float new_x = player.world_pos.x;
 	new_x += candidate.x * player.velocity.x * dt;
+	// calculate AABB tiles
+	int left = static_cast<int>(std::floor(static_cast<float>(new_x / TILE_SIZE)));
+	int right = static_cast<int>(std::floor(static_cast<float>((new_x + player.size - 1) / TILE_SIZE)));
+
+	// verify horizontal movement
+	if (!arena.isWall(c_top, left) && !arena.isWall(c_top, right) && !arena.isWall(c_bottom, left) && !arena.isWall(c_bottom, right)) {
+		player.world_pos.x = new_x;
+	}
+
+	// current horizontal tiles
+	int c_left = static_cast<int>(std::floor(static_cast<float>(player.world_pos.x / TILE_SIZE)));
+	int c_right = static_cast<int>(std::floor(static_cast<float>((player.world_pos.x + player.size - 1) / TILE_SIZE)));
+
+	// new vertical movement 
 	float new_y = player.world_pos.y;
 	new_y += candidate.y * player.velocity.y * dt;
 
-	// calculate AABB tiles
-	int left = static_cast<int>(std::floor(static_cast<float>(new_x / TILE_SIZE)));
-	int right = static_cast<int>(std::floor(static_cast<float>((new_x+player.size-1) / TILE_SIZE)));
 	int top = static_cast<int>(std::floor(static_cast<float>(new_y / TILE_SIZE)));
-	int bottom = static_cast<int>(std::floor(static_cast<float>((new_y+player.size-1) / TILE_SIZE)));
-	
-	// assert(indicies in range)
+	int bottom = static_cast<int>(std::floor(static_cast<float>((new_y + player.size - 1) / TILE_SIZE)));
 
-	// bounds check should actually be done against world dimensions, not screen.
-	if (new_y > arena.map_height || new_x> arena.map_width ||
+	// verify vertical movement
+	if (!arena.isWall(top, c_left) && !arena.isWall(top, c_right) && !arena.isWall(bottom, c_left) && !arena.isWall(bottom, c_right)) {
+		player.world_pos.y = new_y;
+	}
+
+	// todo - introduce some temp variable so we can check this first..?
+	if (new_y > arena.map_height || new_x > arena.map_width ||
 		new_x <= 0 || new_y <= 0 || new_x + player.size > arena.map_width || new_y + player.size > arena.map_height) {
 		return;
 	}
+
+
+	//// calculate AABB tiles
+	//int left = static_cast<int>(std::floor(static_cast<float>(new_x / TILE_SIZE)));
+	//int right = static_cast<int>(std::floor(static_cast<float>((new_x+player.size-1) / TILE_SIZE)));
+	//int top = static_cast<int>(std::floor(static_cast<float>(new_y / TILE_SIZE)));
+	//int bottom = static_cast<int>(std::floor(static_cast<float>((new_y+player.size-1) / TILE_SIZE)));
+	//
+	// assert(indicies in range)
+
+	// bounds check should actually be done against world dimensions, not screen.
+
 	// check all
-
-
-	//if (arena.grid[top][left] == 1 || grid[top][right] == 1 || grid[bottom][left] == 1 || grid[bottom][right] == 1) {
+	//if (arena.isWall(top, left) || arena.isWall(top, right) || arena.isWall(bottom, left) || arena.isWall(bottom, right)) {
 	//	return;
 	//}
-	if (arena.isWall(top, left) || arena.isWall(top, right) || arena.isWall(bottom, left) || arena.isWall(bottom, right)) {
-		return;
-	}
-	//if (grid[tile_y][tile_x] == 1 || grid[tile_y1][tile_x1] == 1) {
-	//	std::cout << "NOT ALLOWED, tile x :" << tile_x << " tile y: " << tile_y << "\n";
-	//	return;
-	//}
-	player.world_pos.x = new_x;	
-	player.world_pos.y = new_y;
+	//player.world_pos.x = new_x;
+	//player.world_pos.y = new_y;
+
+
+
 
 }
 
