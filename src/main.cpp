@@ -16,6 +16,7 @@ constexpr Color GRID_COLOUR = { 48, 59, 72, 255 };
 //constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
 
 
+const float e = 2.7f;
 
 
 struct Vec2 {
