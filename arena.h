@@ -1,5 +1,6 @@
 #pragma once
 #include "utils.h"
+#include "math.h"
 
 constexpr int TILE_SIZE = 32;
 
@@ -18,5 +19,6 @@ struct Arena {
 	//bool isObstacle(int tile_idx) {
 	//	return tile_idx in set of obstacles
 	//}
+	int vec2_to_tile(Vec2 world_pos);
 };
 

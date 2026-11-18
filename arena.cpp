@@ -1,7 +1,7 @@
 #include "arena.h"
 #include <exception>
 #include <stdexcept>
-const int magic = 23;
+
 Arena::Arena(const std::string &csv_path) {
   auto res = parse_csv(csv_path);
   if (!res.has_value()) {
@@ -37,3 +37,10 @@ int Arena::tile(int r, int c) {
   }
   return grid[r][c];
 }
+
+int Arena::vec2_to_tile(Vec2 world_pos){
+    int col = std::floor(world_pos.x / TILE_SIZE);
+    int row = std::floor(world_pos.y / TILE_SIZE);
+    return tile(row,col);
+  }
+

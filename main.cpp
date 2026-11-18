@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <queue>
 #include <vector>
 
 constexpr int SCREEN_WIDTH = 1280;
@@ -15,47 +16,41 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 // constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
 // constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
 
-struct Vec2 {
-  float x, y;
-  float length() { return std::hypot(x, y); }
-  void normalise() {
-    float len = length();
-    // if (IsNearlyZero(len)) {
-    //	return;
-    // }
-    if (!len) {
-      // TODO - this is getting called off start!
-      return;
-    }
-    this->x /= len;
-    this->y /= len;
-  }
-  Vec2 normalised() {
-    float len = length();
-    // if (IsNearlyZero(len)) {
-    //	return;
-    // }
-    if (!len) {
-      return {0, 0};
-    }
-    return {x / len, y / len};
-  }
 
-  Vec2 operator-(Vec2 rhs) { return {x - rhs.x, y - rhs.y}; }
-  Vec2 &operator*=(float scalar) {
-    this->x *= scalar;
-    this->y *= scalar;
-    return *this;
-  }
-  Vec2 operator*(float scalar) { return {x * scalar, y * scalar}; }
 
-  Vec2 &operator+=(Vec2 rhs) {
-    this->x += rhs.x;
-    this->y += rhs.y;
-    return *this;
+
+
+
+float heuristic(Vec2 rhs, Vec2 lhs){
+  return rhs.distance(lhs);
+}
+
+
+std::vector<int> build_path(std::vector<int>& parents, int node){
+  std::vector<int> path;
+  // assumes i default parents to -1>?
+  while(node != -1){
+    node = parents[node];
+    path.push_back(node);
   }
+  std::reverse(path.begin(),path.end());
+  return path;
+}
+using cost_node = std::pair<int,int>;
+std::vector<int> neighbours(int tile);
+
+std::vector<int> a_star(int start_node,int target_node, Arena& arena){
+ std::priority_queue<
+		std::pair<int, int>, // type of entry
+		std::vector<std::pair<int, int>>, // container storing the entries
+		std::greater<std::pair<int, int>> // min heap
+	> frontier;
+  std::vector<int> cost_to(arena.cols*arena.rows,0);
+  std::vector<int> parents(arena.cols * arena.rows, -1);
+  frontier.push({heuristic(tile_to_vec(start_node), tile_to_vec(target_node)),start_node});
+  
+  return {-1};
 };
-
 // todo - factor these bools into a single enum, with helper functions like
 // is_move_up etc
 struct input_state {
@@ -71,7 +66,7 @@ struct Player {
   Vec2 world_pos;
   Vec2 velocity;
   float size;
-  float health;
+  float health = 100;
 };
 
 float bullet_speed = 200.f;
@@ -293,7 +288,8 @@ void update(Arena &arena, float dt, Player &player, input_state input) {
 int main() {
   SetTargetFPS(365);
   // todo - correct path should be assets/arena/arena.csv
-  Arena arena("assets/arena.csv");
+  auto csv =  R"(C:\Users\A\Desktop\gai\raylib_ai\assets\arena.csv)";
+  Arena arena(csv);
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
 
