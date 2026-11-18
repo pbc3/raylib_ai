@@ -1,0 +1,63 @@
+# Visual Studio user settings and caches
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+*.sdf
+*.opensdf
+*.ipch
+
+# Build output directories
+build/
+out/
+bin/
+obj/
+Debug/
+Release/
+RelWithDebInfo/
+MinSizeRel/
+x64/
+x86/
+cmake-build-*/
+
+# CMake-generated files
+CMakeFiles/
+CMakeCache.txt
+CMakeUserPresets.json
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+build.ninja
+.ninja_deps
+.ninja_log
+
+# Compiler, linker, and debugger outputs
+*.obj
+*.o
+*.pch
+*.pdb
+*.ilk
+*.idb
+*.tlog
+*.lastbuildstate
+*.iobj
+*.ipdb
+*.exp
+*.lib
+*.exe
+*.dll
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Keep project configuration and vendored source tracked:
+# CMakeLists.txt, CMakePresets.json, *.sln, *.vcxproj, src/, assets/, vendor/

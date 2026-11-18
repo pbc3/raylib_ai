@@ -1,0 +1,46 @@
+
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "debug",
+      "displayName": "Clang Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "BUILD_SHARED_LIBS": "OFF",
+        "BUILD_EXAMPLES": "OFF",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+  "name": "release",
+  "displayName": "Clang Release",
+  "inherits": "debug",
+  "binaryDir": "${sourceDir}/build-release",
+  "cacheVariables": {
+    "CMAKE_BUILD_TYPE": "Release"
+  }
+}
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "run",
+      "configurePreset": "debug",
+      "targets": ["run"]
+    },
+    {
+      "name": "release",
+      "configurePreset" : "release"
+    }
+  ]
+}
+
+
