@@ -24,7 +24,7 @@ struct Vec2 {
     //	return;
     // }
     if (!len) {
-      // TODO - this is getting called!
+      // TODO - this is getting called off start!
       return;
     }
     this->x /= len;
