@@ -1,4 +1,6 @@
 
+#include <cmath>
+
 struct Vec2 {
   float x, y;
   float length() { return std::hypot(x, y); }
