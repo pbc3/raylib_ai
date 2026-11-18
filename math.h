@@ -4,8 +4,8 @@
 struct Vec2 {
   float x, y;
   float length() { return std::hypot(x, y); }
-  
-  float distance(Vec2 other){
+
+  float distance(Vec2 other) {
     float dx = other.x - x;
     float dy = other.y - y;
     float b = (dx * dx) + (dy * dy);

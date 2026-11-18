@@ -6,6 +6,8 @@
 #include <iostream>
 #include <queue>
 #include <vector>
+#include <unordered_map>
+
 
 constexpr int SCREEN_WIDTH = 1280;
 constexpr int SCREEN_HEIGHT = 704;
@@ -16,41 +18,99 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 // constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
 // constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
 
+int heuristic(int start, int target, int cols){
+  // return rhs.distance(lhs);return 0;
+  // manhattan distance = | x1 - x2 | + |y1 - y2|
+  int row1 = start / cols;
+  int col1 = start % cols;
+  int row2 = target / cols;
+  int col2 = target % cols;
 
-
-
-
-
-float heuristic(Vec2 rhs, Vec2 lhs){
-  return rhs.distance(lhs);
-}
-
-
-std::vector<int> build_path(std::vector<int>& parents, int node){
-  std::vector<int> path;
-  // assumes i default parents to -1>?
-  while(node != -1){
-    node = parents[node];
-    path.push_back(node);
-  }
-  std::reverse(path.begin(),path.end());
-  return path;
-}
-using cost_node = std::pair<int,int>;
-std::vector<int> neighbours(int tile);
-
-std::vector<int> a_star(int start_node,int target_node, Arena& arena){
- std::priority_queue<
-		std::pair<int, int>, // type of entry
-		std::vector<std::pair<int, int>>, // container storing the entries
-		std::greater<std::pair<int, int>> // min heap
-	> frontier;
-  std::vector<int> cost_to(arena.cols*arena.rows,0);
-  std::vector<int> parents(arena.cols * arena.rows, -1);
-  frontier.push({heuristic(tile_to_vec(start_node), tile_to_vec(target_node)),start_node});
-  
-  return {-1};
+  return std::abs(row1 - row2) + std::abs(col1 - col2);
 };
+
+std::vector<int> build_path(std::vector<int> &parents, int node) {
+  std::vector<int> path;
+  // assumes default parents -1
+  while (node != -1) {
+    path.push_back(node);
+    node = parents[node];
+  }
+  std::reverse(path.begin(), path.end());
+  return path;
+};
+
+std::vector<std::pair<int, int>> neighbours(Arena& arena, int tile) {
+  // octile..?
+  // diagonal cost = 1.414
+  // cardinal cost = 1
+  std::vector<std::pair<int, int>> neighbour_tiles;
+
+  auto [row,col] = arena.tile_to_row_col(tile);
+
+  if(!arena.isWall(row+1,col)){
+    neighbour_tiles.push_back({1,arena.flatten(row+1,col)});
+  }
+  if(!arena.isWall(row-1,col)){
+  neighbour_tiles.push_back({1,arena.flatten(row-1,col)});
+  }
+  if(!arena.isWall(row,col-1)){
+  neighbour_tiles.push_back({1,arena.flatten(row,col-1)});
+  }
+  if(!arena.isWall(row,col+1)){
+  neighbour_tiles.push_back({1,arena.flatten(row,col+1)});
+  }
+
+  return neighbour_tiles;
+}
+
+// here - im working with flattened indices, even though my array is 2D. 
+std::vector<int> astar(Arena &arena, int start_node, int target_node) {
+  std::priority_queue<std::pair<int, int>,              // type of entry
+                      std::vector<std::pair<int, int>>, // container storing the
+                                                        // entries
+                      std::greater<std::pair<int, int>> // min heap
+                      >
+      fringe;
+
+  std::vector<int> parents(arena.rows * arena.cols, -1);
+  std::unordered_map<int, int> cost_so_far;
+
+  fringe.push({heuristic(start_node, target_node,arena.cols), start_node});
+  parents[start_node] = -1;
+  cost_so_far[start_node] = 0;
+
+  while (!fringe.empty()) {
+    auto [priority, node] = fringe.top();
+    fringe.pop();
+
+    if (priority != cost_so_far[node] + heuristic(node, target_node, arena.cols)) {
+      continue; // there can be >1 pairs with the same node, but different
+                // costs. this confirms its still the best one, else its skipped
+    }
+
+    if (node == target_node) { return build_path(parents, node); }
+
+    for (auto [edge_cost, candidate] : neighbours(arena, node)) {
+      auto [row, col] = arena.tile_to_row_col(candidate);
+      if(arena.isWall(row,col)){
+        continue;
+      } 
+
+			int new_cost = edge_cost + cost_so_far.at(node); // g(n);
+
+			auto it = cost_so_far.find(candidate);
+			if (it == cost_so_far.end() || new_cost < it->second) {
+        cost_so_far[candidate] = new_cost;
+        parents[candidate] = node;
+        int new_priority = new_cost + heuristic(candidate, target_node, arena.cols); // h(n)
+        fringe.push({new_priority, candidate});
+			}
+    }
+  }
+  return {-1};
+}
+
 // todo - factor these bools into a single enum, with helper functions like
 // is_move_up etc
 struct input_state {
@@ -169,8 +229,33 @@ input_state handle_input(Camera2D camera, Player &player) {
 }
 
 std::vector<Bullet> bullets;
+struct Enemy{
+  Vec2 world_pos;
+  Vec2 velocity;
+  float threshold = 2.0f;
+  float size;
 
-void update(Arena &arena, float dt, Player &player, input_state input) {
+  std::vector<Vec2> cur_path;
+  int cur_waypoint;
+
+  void follow_path(float dt){
+    if(cur_waypoint >= cur_path.size()){
+      return;
+    }
+    Vec2 target_pos = cur_path[cur_waypoint];
+    float dist = world_pos.distance(target_pos);
+    if(dist < threshold){
+      cur_waypoint++;
+      return;
+    }
+    Vec2 dir = target_pos - world_pos;
+    dir.normalise();
+
+    world_pos.x += dir.x * velocity.x* dt;
+    world_pos.y += dir.y * velocity.y* dt;
+  }
+};
+void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state input) {
 
   // todo - movement needs more work. what if the player can touch more than 4
   // tiles at once?
@@ -259,6 +344,7 @@ void update(Arena &arena, float dt, Player &player, input_state input) {
         new_y + player.size > arena.map_height) {
       return;
     }
+    enemy.follow_path(dt);
   }
   // enemy update
   {
@@ -285,18 +371,38 @@ void update(Arena &arena, float dt, Player &player, input_state input) {
   // player.world_pos.y = new_y;
 }
 
+
+
 int main() {
   SetTargetFPS(365);
   // todo - correct path should be assets/arena/arena.csv
-  auto csv =  R"(C:\Users\A\Desktop\gai\raylib_ai\assets\arena.csv)";
+  auto csv = R"(C:\dev\gai_cwk\assets\arena.csv)";
   Arena arena(csv);
-
+  const auto adjacent = neighbours(arena, 146);
+  for(auto [cost, node] : adjacent){
+    std::cout << "cost : " << cost << " node : " << node << "\n";
+  }
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
 
   Player player;
   player.world_pos = {100, 100};
   player.velocity = {350, 350};
   player.size = 30.f;
+
+  Enemy enemy;
+  enemy.world_pos = {750,450};
+  enemy.velocity = {350,350};
+  enemy.size = 30.f;
+
+  int player_tile = arena.vec2_to_tile(player.world_pos);
+  int enemy_tile = arena.vec2_to_tile(enemy.world_pos);
+  auto path = astar(arena,enemy_tile,player_tile);
+  std::vector<Vec2> world_path;
+  for(int p : path){
+    world_path.push_back(arena.tile_to_world(p));
+  }
+  enemy.cur_path = world_path;
+  enemy.cur_waypoint = 0;
 
   // todo - clamp camera to map edges
   Camera2D camera = {0};
@@ -313,7 +419,15 @@ int main() {
     // handle_input()
     input_state input = handle_input(camera, player);
     // update()
-    update(arena, dt, player, input);
+     player_tile = arena.vec2_to_tile(player.world_pos);
+ enemy_tile = arena.vec2_to_tile(enemy.world_pos);
+    path = astar(arena,enemy_tile,player_tile);
+    std::vector<Vec2> wp;
+    for(int p : path){
+    wp.push_back(arena.tile_to_world(p));
+        }
+    enemy.cur_path = wp;
+    update(arena, dt, player, enemy, input);
     // Draw
     // camera.target = *reinterpret_cast<Vector2*>(&player.world_pos);
     BeginDrawing();
@@ -322,6 +436,7 @@ int main() {
                              player.world_pos.y + (player.size / 2)};
     camera.target = player_target;
     BeginMode2D(camera);
+
 
     // RENDERING. todo - factor this out into a func
     //  todo - stop drawing the grid every frame, draw it once into a texture,
@@ -332,19 +447,23 @@ int main() {
     }
     DrawRectangleV(*reinterpret_cast<Vector2 *>(&player.world_pos),
                    {player.size, player.size}, BLUE);
+    DrawRectangleV(*reinterpret_cast<Vector2 *>(&enemy.world_pos),
+{enemy.size, enemy.size}, BLUE);
     // DrawRectangle(player.world_pos.x, player.world_pos.y, player_size,
     // player_size, BLUE);/**/
     DrawRectangleLines(player.world_pos.x, player.world_pos.y, player.size,
                        player.size, RAYWHITE);
+    for(auto waypoint : path){
+      Vec2 waypoint_pos = arena.tile_to_world(waypoint);
+      DrawCircle(waypoint_pos.x, waypoint_pos.y, 5, RED);
+    }
+  //
+  // DrawRectangleLines(width, height, player_size, player_size, RAYWHITE);
+  // DrawRectangle(100, 100, 600, 400, { 100, 100, 100, 255 });
+  EndMode2D();
+  EndDrawing();
+}
 
-    // end rendering
-    //
-    // DrawRectangleLines(width, height, player_size, player_size, RAYWHITE);
-    // DrawRectangle(100, 100, 600, 400, { 100, 100, 100, 255 });
-    EndMode2D();
-    EndDrawing();
-  }
-
-  CloseWindow();
-  return 0;
+CloseWindow();
+return 0;
 }
