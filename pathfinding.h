@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include "math.h"
+#include "math_utils.h"
 #include "arena.h"
 #include <queue>
 #include <unordered_map>
@@ -23,6 +23,7 @@ std::vector<int> build_path(std::vector<int> &parents, int node) {
     path.push_back(node);
     node = parents[node];
   }
+  path.erase(path.begin());
   std::reverse(path.begin(), path.end());
   return path;
 };
@@ -97,3 +98,8 @@ std::vector<int> astar(Arena &arena, int start_node, int target_node) {
   }
   return {-1};
 }
+
+
+// std::vector<int> BFS(Arena& arena, int start_node, int target_node){
+
+// }

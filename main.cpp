@@ -40,6 +40,41 @@ struct input_state {
 };
 
 
+input_state handle_input(Camera2D camera, Player &player) {
+  input_state input{false, false, false, false,MovementState::move_down, false, {0, 0}};
+  if (IsKeyDown(KEY_W)) {
+    // player_pos.y -= 1;
+    input.move_up = true;
+  }
+  if (IsKeyDown(KEY_A)) {
+    // player_pos.x -= 1;
+    input.move_left = true;
+  }
+  if (IsKeyDown(KEY_S)) {
+    // player_pos.y += 1;
+    input.move_down = true;
+  }
+  if (IsKeyDown(KEY_D)) {
+    // player_pos.x += 1;
+    input.move_right = true;
+  }
+  // bullets
+  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    input.firing = true;
+  }
+  // aim direction
+  Vector2 screen_mouse_pos = GetMousePosition();
+  Vector2 world_mouse_pos = GetScreenToWorld2D(screen_mouse_pos, camera);
+  input.mouse_dir =
+      (*reinterpret_cast<Vec2 *>(&world_mouse_pos) - player.world_pos)
+          .normalised();
+  // TODO - poll mouse events in my own way. GLFW is causing issues.
+  // i want to draw a tiny triangle,on the edge of the box, in the direction we
+  // are facing
+
+  return input;
+}
+
 
 float bullet_speed = 200.f;
 struct Bullet {
@@ -90,70 +125,17 @@ void draw_grid(Arena &arena) {
                      {141, 169, 196, 255});
 };
 
-input_state handle_input(Camera2D camera, Player &player) {
-  input_state input{false, false, false, false,MovementState::move_down, false, {0, 0}};
-  if (IsKeyDown(KEY_W)) {
-    // player_pos.y -= 1;
-    input.move_up = true;
-  }
-  if (IsKeyDown(KEY_A)) {
-    // player_pos.x -= 1;
-    input.move_left = true;
-  }
-  if (IsKeyDown(KEY_S)) {
-    // player_pos.y += 1;
-    input.move_down = true;
-  }
-  if (IsKeyDown(KEY_D)) {
-    // player_pos.x += 1;
-    input.move_right = true;
-  }
 
-  // bullets
-  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-    input.firing = true;
-  }
-  // aim direction.
-  Vector2 screen_mouse_pos = GetMousePosition();
-  Vector2 world_mouse_pos = GetScreenToWorld2D(screen_mouse_pos, camera);
-  input.mouse_dir =
-      (*reinterpret_cast<Vec2 *>(&world_mouse_pos) - player.world_pos)
-          .normalised();
-  // TODO - poll mouse events in my own way. GLFW is causing issues.
-  //
-  //
-  // i want to draw a tiny triangle,on the edge of the box, in the direction we
-  // are facing
-
-  return input;
-}
 
 std::vector<Bullet> bullets;
 
 void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state input) {
-
+// ideally, reduce this to contained function calls. enemy.update(dt);player.update(dt);bullet.update(dt);
   // todo - movement needs more work. what if the player can touch more than 4
   // tiles at once?
 
   // player update
-  {
-    // bullets
-    if (input.firing) {
-      Bullet b;
-      b.world_pos = player.world_pos;
-      b.velocity = input.mouse_dir * bullet_speed;
-      bullets.push_back(b);
-    }
-
-    for (Bullet &b : bullets) {
-      if ( b.world_pos.y > arena.map_height ||  b.world_pos.x > arena.map_width ||  b.world_pos.x <= 0 ||
-         b.world_pos.y <= 0){
-          continue;}
-      // if(b.tile == enemy.tile || player.tile){take damage...}
-      b.world_pos += b.velocity * dt;
-    }
-
-    // intended movement
+      // intended movement
     Vec2 candidate{};
 
     // combine candidate intended movement into vector [-1,1] so opposites
@@ -216,20 +198,39 @@ void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state in
         !arena.isWall(bottom, c_left) && !arena.isWall(bottom, c_right)) {
       player.world_pos.y = new_y;
     }
-      // enemy update
+    
+  {
+    // bullets
+    if (input.firing) {
+      Bullet b;
+      b.world_pos = player.world_pos;
+      b.velocity = input.mouse_dir * bullet_speed;
+      bullets.push_back(b);
+    }
+
+    for (Bullet &b : bullets) {
+      if ( b.world_pos.y > arena.map_height ||  b.world_pos.x > arena.map_width ||  b.world_pos.x <= 0 ||
+         b.world_pos.y <= 0){
+          continue;}
+      // if(b.tile == enemy.tile || player.tile){take damage...}
+      b.world_pos += b.velocity * dt;
+    }
+
+   
+    // enemy update
     // for(Enemy& enemy : enemies)
+
+      // request new path
       if(enemy.player_tile != arena.vec2_to_tile(player.world_pos)){
-        // new p
-         int player_tile = arena.vec2_to_tile(player.world_pos);
-    int enemy_tile = arena.vec2_to_tile(enemy.world_pos);
-   auto  path = astar(arena,enemy_tile,player_tile);
-    std::vector<Vec2> wp;
-    for(int p : path){
-        wp.push_back(arena.tile_to_world(p)); 
+      auto new_path = astar(arena, arena.vec2_to_tile(enemy.world_pos),arena.vec2_to_tile(player.world_pos));
+      std::vector<Vec2> wp;
+      for(int p : new_path){
+            wp.push_back(arena.tile_to_world(p)); 
       }
-    enemy.cur_path = wp;
-    enemy.player_tile = player_tile;
-      }
+      enemy.cur_path = wp;
+      enemy.player_tile = arena.vec2_to_tile(player.world_pos);
+      enemy.cur_waypoint=0;
+    }
       enemy.follow_path(dt);
     
 
@@ -268,6 +269,7 @@ int main() {
   enemy.velocity = {350,350};
   enemy.size = 30.f;
 
+  // setup initial paths
   int player_tile = arena.vec2_to_tile(player.world_pos);
   int enemy_tile = arena.vec2_to_tile(enemy.world_pos);
   auto path = astar(arena,enemy_tile,player_tile);
@@ -278,6 +280,7 @@ int main() {
   enemy.cur_path = world_path;
   enemy.cur_waypoint = 0;
   enemy.player_tile = player_tile;
+
   // todo - clamp camera to map edges
   Camera2D camera = {0};
   camera.zoom = 1.f;
@@ -331,8 +334,8 @@ int main() {
     // player_size, BLUE);/**/
     DrawRectangleLines(player.world_pos.x, player.world_pos.y, player.size,
                        player.size, RAYWHITE);
-    for(auto waypoint : path){
-      Vec2 waypoint_pos = arena.tile_to_world(waypoint);
+    for(auto waypoint_pos : enemy.cur_path){
+      // Vec2 waypoint_pos = arena.tile_to_world(waypoint);
       DrawCircle(waypoint_pos.x, waypoint_pos.y, 5, RED);
     }
   //

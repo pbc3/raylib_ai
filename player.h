@@ -1,4 +1,6 @@
-#include "math.h"
+#pragma once
+#include "math_utils.h"
+
 
 
 struct Player {

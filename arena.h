@@ -1,5 +1,5 @@
 #pragma once
-#include "math.h"
+#include "math_utils.h"
 #include "utils.h"
 
 constexpr int TILE_SIZE = 32;

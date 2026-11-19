@@ -1,6 +1,7 @@
 #pragma once
-#include "math.h"
+#include "math_utils.h"
 #include <vector>
+#include "arena.h"
 
 
 struct Enemy{
@@ -12,5 +13,7 @@ struct Enemy{
   std::vector<Vec2> cur_path;
   int cur_waypoint;
   void follow_path(float dt);
+
+  void update(float dt);
 };
 
