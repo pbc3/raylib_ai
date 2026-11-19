@@ -124,7 +124,24 @@
 
 
   std::vector<Bullet> bullets;
-
+  bool valid_movement(Arena& arena, Vec2 requested_pos, float size){
+        float half_size = size / 2;
+        // AABB
+        Vec2 top_left = {requested_pos.x - half_size, requested_pos.y - half_size}; 
+        Vec2 top_right = {requested_pos.x + half_size, requested_pos.y - half_size};
+        Vec2 bottom_right = {requested_pos.x + half_size, requested_pos.y + half_size};
+        Vec2 bottom_left = {requested_pos.x - half_size, requested_pos.y + half_size};
+        int tl_tile = arena.vec2_to_tile(top_left);
+        int tr_tile = arena.vec2_to_tile(top_right);
+        int bl_tile = arena.vec2_to_tile(bottom_left);
+        int br_tile = arena.vec2_to_tile(bottom_right);
+        // verify horizontal movement
+        if (!arena.isWall(tl_tile) && !arena.isWall(bl_tile) &&
+            !arena.isWall(tr_tile) && !arena.isWall(br_tile)) {
+          return true;
+        }
+      return false;
+      }
   void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state input) {
   // ideally, reduce this to contained function calls. enemy.update(dt);player.update(dt);bullet.update(dt);
     // todo - movement needs more work. what if the player can touch more than 4
@@ -153,48 +170,55 @@
       // normalise it so we get even movement across diagonal,
       candidate.normalise();
 
-
-      // world_pos is the centre of the tile
+     
+      // world_pos is the centre of the entity
       //  calculate 4 corners from a centre pos
-      float half_height = player.size / 2;
+      float half_size = player.size / 2;
       // new horizontal movement  
       float new_x = player.world_pos.x;
       new_x += candidate.x * player.velocity.x * dt;
-      Vec2 top_left = {new_x + half_height, player.world_pos.y + half_height}; 
-      Vec2 top_right = {new_x - half_height, player.world_pos.y + half_height};
-      Vec2 bottom_right = {new_x - half_height, player.world_pos.y - half_height};
-      Vec2 bottom_left = {new_x + half_height, player.world_pos.y - half_height};
-      // calculate AABB tiles
-      int tl_tile = arena.vec2_to_tile(top_left);
-      int tr_tile = arena.vec2_to_tile(top_right);
-      int bl_tile = arena.vec2_to_tile(bottom_left);
-      int br_tile = arena.vec2_to_tile(bottom_right);
-
-
-      // verify horizontal movement
-      if (!arena.isWall(tl_tile) && !arena.isWall(bl_tile) &&
-          !arena.isWall(tr_tile) && !arena.isWall(br_tile)) {
-        player.world_pos.x = new_x;
+      Vec2 requested_movement = {new_x, player.world_pos.y};
+      if(valid_movement(arena,requested_movement,player.size)){
+         player.world_pos.x = new_x;
       }
+      // Vec2 top_left = {new_x - half_size, player.world_pos.y - half_size}; 
+      // Vec2 top_right = {new_x + half_size, player.world_pos.y - half_size};
+      // Vec2 bottom_right = {new_x + half_size, player.world_pos.y + half_size};
+      // Vec2 bottom_left = {new_x - half_size, player.world_pos.y + half_size};
+      // // calculate AABB tiles
+      // int tl_tile = arena.vec2_to_tile(top_left);
+      // int tr_tile = arena.vec2_to_tile(top_right);
+      // int bl_tile = arena.vec2_to_tile(bottom_left);
+      // int br_tile = arena.vec2_to_tile(bottom_right);
+
+
+      // // verify horizontal movement
+      // if (!arena.isWall(tl_tile) && !arena.isWall(bl_tile) &&
+      //     !arena.isWall(tr_tile) && !arena.isWall(br_tile)) {
+      //   player.world_pos.x = new_x;
+      // }
       // new vertical movement
       float new_y = player.world_pos.y;
       new_y += candidate.y * player.velocity.y * dt;
-
-
-      top_left = {player.world_pos.x - half_height, new_y + half_height}; 
-      top_right = {player.world_pos.x + half_height, new_y + half_height};
-      bottom_right = {player.world_pos.x + half_height, new_y - half_height};
-      bottom_left = {player.world_pos.x - half_height, new_y - half_height};
-      // calculate AABB tiles for intended vertical movement
-      tl_tile = arena.vec2_to_tile(top_left);
-      tr_tile = arena.vec2_to_tile(top_right);
-      bl_tile = arena.vec2_to_tile(bottom_left);
-      br_tile = arena.vec2_to_tile(bottom_right);
-      // verify vertical movement
-       if (!arena.isWall(tl_tile) && !arena.isWall(bl_tile) &&
-          !arena.isWall(tr_tile) && !arena.isWall(br_tile)) {
-        player.world_pos.y = new_y;
+      requested_movement.x = player.world_pos.x;
+      requested_movement.y = new_y;
+      if(valid_movement(arena,requested_movement,player.size)){
+         player.world_pos.y = new_y;
       }
+      // top_left = {player.world_pos.x - half_size, new_y - half_size}; 
+      // top_right = {player.world_pos.x + half_size, new_y - half_size};
+      // bottom_right = {player.world_pos.x + half_size, new_y + half_size};
+      // bottom_left = {player.world_pos.x - half_size, new_y +   half_size};
+      // // calculate AABB tiles for intended vertical movement
+      // tl_tile = arena.vec2_to_tile(top_left);
+      // tr_tile = arena.vec2_to_tile(top_right);
+      // bl_tile = arena.vec2_to_tile(bottom_left);
+      // br_tile = arena.vec2_to_tile(bottom_right);
+      // // verify vertical movement
+      //  if (!arena.isWall(tl_tile) && !arena.isWall(bl_tile) &&
+      //     !arena.isWall(tr_tile) && !arena.isWall(br_tile)) {
+      //   player.world_pos.y = new_y;
+      // }
       
     {
       // bullets
@@ -256,9 +280,9 @@
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
 
     Player player{};
-    player.world_pos = {100, 100};
+    player.world_pos = {100,100};
     player.velocity = {350, 350};
-    player.size = 30.f;
+    player.size = 25.f;
 
 
     Enemy enemy{};

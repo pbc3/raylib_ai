@@ -95,7 +95,8 @@ std::vector<int> astar(Arena &arena, int start_node, int target_node) {
 			}
     }
   }
-  return {-1};
+
+  return {start_node};
 }
 
 
