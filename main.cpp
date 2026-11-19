@@ -12,8 +12,8 @@
   #include "player.h"
 
 
-  constexpr int SCREEN_WIDTH = 1280;
-  constexpr int SCREEN_HEIGHT = 720;
+  constexpr int SCREEN_WIDTH = 1920;
+  constexpr int SCREEN_HEIGHT = 1080;
   constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE;   // screen x / tile
   constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
   constexpr Color GRID_COLOUR = {48, 59, 72, 255};
@@ -121,28 +121,10 @@
                       {141, 169, 196, 255});
   };
 
+std::vector<Bullet> bullets;
 
 
-  std::vector<Bullet> bullets;
-  bool valid_movement(Arena& arena, Vec2 requested_pos, float size){
-        float half_size = size / 2;
-        // AABB
-        Vec2 top_left = {requested_pos.x - half_size, requested_pos.y - half_size}; 
-        Vec2 top_right = {requested_pos.x + half_size, requested_pos.y - half_size};
-        Vec2 bottom_right = {requested_pos.x + half_size, requested_pos.y + half_size};
-        Vec2 bottom_left = {requested_pos.x - half_size, requested_pos.y + half_size};
-        int tl_tile = arena.vec2_to_tile(top_left);
-        int tr_tile = arena.vec2_to_tile(top_right);
-        int bl_tile = arena.vec2_to_tile(bottom_left);
-        int br_tile = arena.vec2_to_tile(bottom_right);
-        // verify horizontal movement
-        if (!arena.isWall(tl_tile) && !arena.isWall(bl_tile) &&
-            !arena.isWall(tr_tile) && !arena.isWall(br_tile)) {
-          return true;
-        }
-      return false;
-      }
-  void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state input) {
+void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state input) {
   // ideally, reduce this to contained function calls. enemy.update(dt);player.update(dt);bullet.update(dt);
     // todo - movement needs more work. what if the player can touch more than 4
     // tiles at once?
@@ -170,10 +152,8 @@
       // normalise it so we get even movement across diagonal,
       candidate.normalise();
 
-     
-      // world_pos is the centre of the entity
-      //  calculate 4 corners from a centre pos
-      float half_size = player.size / 2;
+  
+
       // new horizontal movement  
       float new_x = player.world_pos.x;
       new_x += candidate.x * player.velocity.x * dt;
@@ -181,22 +161,6 @@
       if(valid_movement(arena,requested_movement,player.size)){
          player.world_pos.x = new_x;
       }
-      // Vec2 top_left = {new_x - half_size, player.world_pos.y - half_size}; 
-      // Vec2 top_right = {new_x + half_size, player.world_pos.y - half_size};
-      // Vec2 bottom_right = {new_x + half_size, player.world_pos.y + half_size};
-      // Vec2 bottom_left = {new_x - half_size, player.world_pos.y + half_size};
-      // // calculate AABB tiles
-      // int tl_tile = arena.vec2_to_tile(top_left);
-      // int tr_tile = arena.vec2_to_tile(top_right);
-      // int bl_tile = arena.vec2_to_tile(bottom_left);
-      // int br_tile = arena.vec2_to_tile(bottom_right);
-
-
-      // // verify horizontal movement
-      // if (!arena.isWall(tl_tile) && !arena.isWall(bl_tile) &&
-      //     !arena.isWall(tr_tile) && !arena.isWall(br_tile)) {
-      //   player.world_pos.x = new_x;
-      // }
       // new vertical movement
       float new_y = player.world_pos.y;
       new_y += candidate.y * player.velocity.y * dt;
@@ -205,22 +169,8 @@
       if(valid_movement(arena,requested_movement,player.size)){
          player.world_pos.y = new_y;
       }
-      // top_left = {player.world_pos.x - half_size, new_y - half_size}; 
-      // top_right = {player.world_pos.x + half_size, new_y - half_size};
-      // bottom_right = {player.world_pos.x + half_size, new_y + half_size};
-      // bottom_left = {player.world_pos.x - half_size, new_y +   half_size};
-      // // calculate AABB tiles for intended vertical movement
-      // tl_tile = arena.vec2_to_tile(top_left);
-      // tr_tile = arena.vec2_to_tile(top_right);
-      // bl_tile = arena.vec2_to_tile(bottom_left);
-      // br_tile = arena.vec2_to_tile(bottom_right);
-      // // verify vertical movement
-      //  if (!arena.isWall(tl_tile) && !arena.isWall(bl_tile) &&
-      //     !arena.isWall(tr_tile) && !arena.isWall(br_tile)) {
-      //   player.world_pos.y = new_y;
-      // }
       
-    {
+      {
       // bullets
       if (input.firing) {
         Bullet b;
@@ -240,36 +190,16 @@
     
       // enemy update
       // for(Enemy& enemy : enemies)
-
         // request new path
-        if(enemy.player_tile != arena.vec2_to_tile(player.world_pos)){
-        auto new_path = astar(arena, arena.vec2_to_tile(enemy.world_pos),arena.vec2_to_tile(player.world_pos));
-        std::vector<Vec2> wp;
-        for(int p : new_path){
-              wp.push_back(arena.tile_to_world(p)); 
-        }
-        enemy.cur_path = wp;
-        enemy.player_tile = arena.vec2_to_tile(player.world_pos);
-        enemy.cur_waypoint=0;
-      }
-        enemy.follow_path(dt);
-      
-
-      // todo - introduce some temp variable so we can check this first..?
-      if (new_y > arena.map_height || new_x > arena.map_width || new_x <= 0 ||
-          new_y <= 0 || new_x + player.size > arena.map_width ||
-          new_y + player.size > arena.map_height) {
-        return;
-      }
-
-
+        enemy.follow_path(dt,arena,player.world_pos);
+  
     }
   }
 
 
 
   int main() {
-    SetTargetFPS(60);
+    SetTargetFPS(360);
     // todo - correct path should be assets/arena/arena.csv
     auto csv = R"(C:\dev\gai_cwk\assets\arena.csv)";
     Arena arena(csv);
@@ -286,7 +216,7 @@
 
 
     Enemy enemy{};
-    enemy.world_pos = {750,450};
+    enemy.world_pos = {657,400};
     enemy.velocity = {350,350};
     enemy.size = 30.f;
 
@@ -306,7 +236,7 @@
     Camera2D camera = {0};
     camera.zoom = 1.f;
     camera.offset = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
-
+    bool draw_paths = true;
     while (!WindowShouldClose()) {
       // if(IsKeyDown(KEY_R)) {
       //  reload csv
@@ -328,9 +258,12 @@
       DrawRectangleV(*reinterpret_cast<Vector2 *>(&player_top_left),{player.size, player.size}, BLUE);
       DrawRectangleV(*reinterpret_cast<Vector2 *>(&enemy_top_left),{enemy.size, enemy.size}, BLACK);
       DrawRectangleLines(player_top_left.x, player_top_left.y, player.size,player.size, RAYWHITE);
+
+      if(draw_paths){
       for(auto waypoint_pos : enemy.cur_path){
         DrawCircle(waypoint_pos.x, waypoint_pos.y, 2.2, RED);
       }
+    }
 
     EndMode2D();
     EndDrawing();

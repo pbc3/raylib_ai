@@ -1,6 +1,9 @@
 #pragma once
 #include "math_utils.h"
 #include "utils.h"
+#include <array>
+#include <exception>
+#include <stdexcept>
 
 constexpr int TILE_SIZE = 32;
 
@@ -26,3 +29,6 @@ struct Arena {
   std::pair<int, int> tile_to_row_col(int tile);
   Vec2 tile_to_world(int tile);
 };
+
+bool out_of_bounds(Arena& arena, Vec2 requested_pos);
+bool valid_movement(Arena& arena, Vec2 requested_pos, float size);

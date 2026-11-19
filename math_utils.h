@@ -29,6 +29,9 @@ struct Vec2 {
     this->x /= len;
     this->y /= len;
   }
+  Vec2 operator+(Vec2 rhs){
+    return {this->x + rhs.x, this->y + rhs.y};
+  }
   Vec2 normalised() {
     float len = length();
     // if (IsNearlyZero(len)) {

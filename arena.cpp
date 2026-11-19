@@ -1,6 +1,36 @@
 #include "arena.h"
 #include <exception>
 #include <stdexcept>
+#include <array>
+
+bool out_of_bounds(Arena& arena, Vec2 requested_pos){
+  if (requested_pos.y > arena.map_height || requested_pos.x > arena.map_width || requested_pos.x <= 0 ||
+          requested_pos.y <= 0) {
+        return true;
+    }
+    return false;
+};
+  bool valid_movement(Arena& arena, Vec2 requested_pos, float size){
+      // requested_pos is the centre of the entity
+      //  calculate 4 corners from a centre pos
+        float half_size = size / 2;
+        // AABB
+        Vec2 top_left = {requested_pos.x - half_size, requested_pos.y - half_size}; 
+        Vec2 top_right = {requested_pos.x + half_size, requested_pos.y - half_size};
+        Vec2 bottom_right = {requested_pos.x + half_size, requested_pos.y + half_size};
+        Vec2 bottom_left = {requested_pos.x - half_size, requested_pos.y + half_size};
+        std::array<Vec2, 4> boundaries{top_left,top_right,bottom_right,bottom_left};
+        for(int i = 0; i <= 3; i++){
+          Vec2 boundary = boundaries[i];
+          int tile = arena.vec2_to_tile(boundary);
+    
+          if(out_of_bounds(arena, boundary) || arena.isWall(tile)){
+            return false;
+          }
+        }
+      return true;
+};
+
 
 Arena::Arena(const std::string &csv_path) {
   auto res = parse_csv(csv_path);
@@ -44,6 +74,9 @@ int Arena::tile(int r, int c) {
 std::pair<int, int> Arena::tile_to_row_col(int tile) {
   int row = tile / cols;
   int col = tile % cols;
+  // if(row >= rows || col >= cols){
+    // return
+  // }
   return {row, col};
 }
 
@@ -62,3 +95,4 @@ int Arena::vec2_to_tile(Vec2 world_pos) {
   int row = std::floor(world_pos.y / TILE_SIZE);
   return flatten(row,col);
 }
+
