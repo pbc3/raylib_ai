@@ -1,4 +1,4 @@
-
+#pragma once
 #include <cmath>
 
 struct Vec2 {
@@ -11,7 +11,12 @@ struct Vec2 {
     float b = (dx * dx) + (dy * dy);
     return std::sqrt(b);
   }
-
+   bool operator==(Vec2 rhs){
+    return this->x == rhs.x && this->y == rhs.y;
+   }
+   bool operator!=(Vec2 rhs){
+    return !(*this == rhs);
+   }
   void normalise() {
     float len = length();
     // if (IsNearlyZero(len)) {

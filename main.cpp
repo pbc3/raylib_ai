@@ -7,10 +7,13 @@
 #include <queue>
 #include <vector>
 #include <unordered_map>
+#include "enemy.h"
+#include "pathfinding.h"
+#include "player.h"
 
 
-constexpr int SCREEN_WIDTH = 1280;
-constexpr int SCREEN_HEIGHT = 704;
+constexpr int SCREEN_WIDTH = 1920;
+constexpr int SCREEN_HEIGHT = 1080;
 constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE;   // screen x / tile
 constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
 constexpr Color GRID_COLOUR = {48, 59, 72, 255};
@@ -18,116 +21,25 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 // constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
 // constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
 
-int heuristic(int start, int target, int cols){
-  // return rhs.distance(lhs);return 0;
-  // manhattan distance = | x1 - x2 | + |y1 - y2|
-  int row1 = start / cols;
-  int col1 = start % cols;
-  int row2 = target / cols;
-  int col2 = target % cols;
 
-  return std::abs(row1 - row2) + std::abs(col1 - col2);
-};
-
-std::vector<int> build_path(std::vector<int> &parents, int node) {
-  std::vector<int> path;
-  // assumes default parents -1
-  while (node != -1) {
-    path.push_back(node);
-    node = parents[node];
-  }
-  std::reverse(path.begin(), path.end());
-  return path;
-};
-
-std::vector<std::pair<int, int>> neighbours(Arena& arena, int tile) {
-  // octile..?
-  // diagonal cost = 1.414
-  // cardinal cost = 1
-  std::vector<std::pair<int, int>> neighbour_tiles;
-
-  auto [row,col] = arena.tile_to_row_col(tile);
-
-  if(!arena.isWall(row+1,col)){
-    neighbour_tiles.push_back({1,arena.flatten(row+1,col)});
-  }
-  if(!arena.isWall(row-1,col)){
-  neighbour_tiles.push_back({1,arena.flatten(row-1,col)});
-  }
-  if(!arena.isWall(row,col-1)){
-  neighbour_tiles.push_back({1,arena.flatten(row,col-1)});
-  }
-  if(!arena.isWall(row,col+1)){
-  neighbour_tiles.push_back({1,arena.flatten(row,col+1)});
-  }
-
-  return neighbour_tiles;
-}
-
-// here - im working with flattened indices, even though my array is 2D. 
-std::vector<int> astar(Arena &arena, int start_node, int target_node) {
-  std::priority_queue<std::pair<int, int>,              // type of entry
-                      std::vector<std::pair<int, int>>, // container storing the
-                                                        // entries
-                      std::greater<std::pair<int, int>> // min heap
-                      >
-      fringe;
-
-  std::vector<int> parents(arena.rows * arena.cols, -1);
-  std::unordered_map<int, int> cost_so_far;
-
-  fringe.push({heuristic(start_node, target_node,arena.cols), start_node});
-  parents[start_node] = -1;
-  cost_so_far[start_node] = 0;
-
-  while (!fringe.empty()) {
-    auto [priority, node] = fringe.top();
-    fringe.pop();
-
-    if (priority != cost_so_far[node] + heuristic(node, target_node, arena.cols)) {
-      continue; // there can be >1 pairs with the same node, but different
-                // costs. this confirms its still the best one, else its skipped
-    }
-
-    if (node == target_node) { return build_path(parents, node); }
-
-    for (auto [edge_cost, candidate] : neighbours(arena, node)) {
-      auto [row, col] = arena.tile_to_row_col(candidate);
-      if(arena.isWall(row,col)){
-        continue;
-      } 
-
-			int new_cost = edge_cost + cost_so_far.at(node); // g(n);
-
-			auto it = cost_so_far.find(candidate);
-			if (it == cost_so_far.end() || new_cost < it->second) {
-        cost_so_far[candidate] = new_cost;
-        parents[candidate] = node;
-        int new_priority = new_cost + heuristic(candidate, target_node, arena.cols); // h(n)
-        fringe.push({new_priority, candidate});
-			}
-    }
-  }
-  return {-1};
-}
 
 // todo - factor these bools into a single enum, with helper functions like
 // is_move_up etc
+enum class MovementState : uint8_t {
+  move_up = 0, move_down, move_left, move_right
+};
+
 struct input_state {
   bool move_up;
   bool move_down;
   bool move_left;
   bool move_right;
+  MovementState movement_state;
   bool firing;
   Vec2 mouse_dir;
 };
 
-struct Player {
-  Vec2 world_pos;
-  Vec2 velocity;
-  float size;
-  float health = 100;
-};
+
 
 float bullet_speed = 200.f;
 struct Bullet {
@@ -179,19 +91,7 @@ void draw_grid(Arena &arena) {
 };
 
 input_state handle_input(Camera2D camera, Player &player) {
-  // bool IsKeyPressed(int key);                             // Check if key has
-  // been pressed once bool IsKeyPressedRepeat(int key); // Check if key has
-  // been pressed again bool IsKeyDown(int key); // Check if key is being
-  // pressed bool IsKeyReleased(int key);                            // Check if
-  // key has been released once bool IsKeyUp(int key); // Check if key is NOT
-  // being pressed int GetKeyPressed(void);                                //
-  // Get key pressed (keycode), call it multiple times for keys queued, returns
-  // 0 when the queue is empty int GetCharPressed(void); // Get char pressed
-  // (unicode), call it multiple times for chars queued, returns 0 when the
-  // queue is empty const char* GetKeyName(int key);                        //
-  // Get name of a QWERTY key on the current keyboard layout (eg returns string
-  // 'q' for KEY_A on an AZERTY keyboard)
-  input_state input{false, false, false, false, false, {0, 0}};
+  input_state input{false, false, false, false,MovementState::move_down, false, {0, 0}};
   if (IsKeyDown(KEY_W)) {
     // player_pos.y -= 1;
     input.move_up = true;
@@ -229,32 +129,7 @@ input_state handle_input(Camera2D camera, Player &player) {
 }
 
 std::vector<Bullet> bullets;
-struct Enemy{
-  Vec2 world_pos;
-  Vec2 velocity;
-  float threshold = 2.0f;
-  float size;
 
-  std::vector<Vec2> cur_path;
-  int cur_waypoint;
-
-  void follow_path(float dt){
-    if(cur_waypoint >= cur_path.size()){
-      return;
-    }
-    Vec2 target_pos = cur_path[cur_waypoint];
-    float dist = world_pos.distance(target_pos);
-    if(dist < threshold){
-      cur_waypoint++;
-      return;
-    }
-    Vec2 dir = target_pos - world_pos;
-    dir.normalise();
-
-    world_pos.x += dir.x * velocity.x* dt;
-    world_pos.y += dir.y * velocity.y* dt;
-  }
-};
 void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state input) {
 
   // todo - movement needs more work. what if the player can touch more than 4
@@ -271,6 +146,10 @@ void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state in
     }
 
     for (Bullet &b : bullets) {
+      if ( b.world_pos.y > arena.map_height ||  b.world_pos.x > arena.map_width ||  b.world_pos.x <= 0 ||
+         b.world_pos.y <= 0){
+          continue;}
+      // if(b.tile == enemy.tile || player.tile){take damage...}
       b.world_pos += b.velocity * dt;
     }
 
@@ -337,6 +216,22 @@ void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state in
         !arena.isWall(bottom, c_left) && !arena.isWall(bottom, c_right)) {
       player.world_pos.y = new_y;
     }
+      // enemy update
+    // for(Enemy& enemy : enemies)
+      if(enemy.player_tile != arena.vec2_to_tile(player.world_pos)){
+        // new p
+         int player_tile = arena.vec2_to_tile(player.world_pos);
+    int enemy_tile = arena.vec2_to_tile(enemy.world_pos);
+   auto  path = astar(arena,enemy_tile,player_tile);
+    std::vector<Vec2> wp;
+    for(int p : path){
+        wp.push_back(arena.tile_to_world(p)); 
+      }
+    enemy.cur_path = wp;
+    enemy.player_tile = player_tile;
+      }
+      enemy.follow_path(dt);
+    
 
     // todo - introduce some temp variable so we can check this first..?
     if (new_y > arena.map_height || new_x > arena.map_width || new_x <= 0 ||
@@ -344,37 +239,15 @@ void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state in
         new_y + player.size > arena.map_height) {
       return;
     }
-    enemy.follow_path(dt);
-  }
-  // enemy update
-  {
-  }
-  //// calculate AABB tiles
-  // int left = static_cast<int>(std::floor(static_cast<float>(new_x /
-  // TILE_SIZE))); int right =
-  // static_cast<int>(std::floor(static_cast<float>((new_x+player.size-1) /
-  // TILE_SIZE))); int top =
-  // static_cast<int>(std::floor(static_cast<float>(new_y / TILE_SIZE))); int
-  // bottom =
-  // static_cast<int>(std::floor(static_cast<float>((new_y+player.size-1) /
-  // TILE_SIZE)));
-  //
-  //  assert(indicies in range)
 
-  // bounds check should actually be done against world dimensions, not screen.
 
-  // check all
-  // if (arena.isWall(top, left) || arena.isWall(top, right) ||
-  // arena.isWall(bottom, left) || arena.isWall(bottom, right)) { 	return;
-  //}
-  // player.world_pos.x = new_x;
-  // player.world_pos.y = new_y;
+  }
 }
 
 
 
 int main() {
-  SetTargetFPS(365);
+  SetTargetFPS(60);
   // todo - correct path should be assets/arena/arena.csv
   auto csv = R"(C:\dev\gai_cwk\assets\arena.csv)";
   Arena arena(csv);
@@ -384,12 +257,13 @@ int main() {
   }
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
 
-  Player player;
+  Player player{};
   player.world_pos = {100, 100};
   player.velocity = {350, 350};
   player.size = 30.f;
 
-  Enemy enemy;
+
+  Enemy enemy{};
   enemy.world_pos = {750,450};
   enemy.velocity = {350,350};
   enemy.size = 30.f;
@@ -403,7 +277,7 @@ int main() {
   }
   enemy.cur_path = world_path;
   enemy.cur_waypoint = 0;
-
+  enemy.player_tile = player_tile;
   // todo - clamp camera to map edges
   Camera2D camera = {0};
   camera.zoom = 1.f;
@@ -411,6 +285,7 @@ int main() {
 
   while (!WindowShouldClose()) {
     DrawText(TextFormat("FPS: %i", GetFPS()), 10, 10, 20, GREEN);
+    DrawText(TextFormat("Health: %i", (int) player.health), 160, 10, 20, GREEN);
     // if(IsKeyDown(KEY_R)) {
     //  reload csv
     // }
@@ -419,14 +294,16 @@ int main() {
     // handle_input()
     input_state input = handle_input(camera, player);
     // update()
-     player_tile = arena.vec2_to_tile(player.world_pos);
- enemy_tile = arena.vec2_to_tile(enemy.world_pos);
-    path = astar(arena,enemy_tile,player_tile);
-    std::vector<Vec2> wp;
-    for(int p : path){
-    wp.push_back(arena.tile_to_world(p));
-        }
-    enemy.cur_path = wp;
+    // {
+    // player_tile = arena.vec2_to_tile(player.world_pos);
+    // enemy_tile = arena.vec2_to_tile(enemy.world_pos);
+    // path = astar(arena,enemy_tile,player_tile);
+    // std::vector<Vec2> wp;
+    // for(int p : path){
+    //     wp.push_back(arena.tile_to_world(p)); 
+    //   }
+    // enemy.cur_path = wp;
+    //   }
     update(arena, dt, player, enemy, input);
     // Draw
     // camera.target = *reinterpret_cast<Vector2*>(&player.world_pos);
@@ -443,12 +320,13 @@ int main() {
     //  and just repeatdly show that
     draw_grid(arena);
     for (Bullet &b : bullets) {
+
       DrawCircle(b.world_pos.x, b.world_pos.y, 3, RED);
     }
     DrawRectangleV(*reinterpret_cast<Vector2 *>(&player.world_pos),
                    {player.size, player.size}, BLUE);
     DrawRectangleV(*reinterpret_cast<Vector2 *>(&enemy.world_pos),
-{enemy.size, enemy.size}, BLUE);
+{enemy.size, enemy.size}, BLACK);
     // DrawRectangle(player.world_pos.x, player.world_pos.y, player_size,
     // player_size, BLUE);/**/
     DrawRectangleLines(player.world_pos.x, player.world_pos.y, player.size,
