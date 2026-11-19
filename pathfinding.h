@@ -23,7 +23,6 @@ std::vector<int> build_path(std::vector<int> &parents, int node) {
     path.push_back(node);
     node = parents[node];
   }
-  path.erase(path.begin());
   std::reverse(path.begin(), path.end());
   return path;
 };

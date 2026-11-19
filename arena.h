@@ -17,6 +17,7 @@ struct Arena {
         map_height(rows * TILE_SIZE), map_width(cols * TILE_SIZE) {};
   int tile(int r, int c);
   bool isWall(int _row, int _col);
+  bool isWall(int tile);
   // bool isObstacle(int tile_idx) {
   //	return tile_idx in set of obstacles
   // }

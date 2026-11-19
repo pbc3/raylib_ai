@@ -13,7 +13,6 @@ struct Enemy{
   std::vector<Vec2> cur_path;
   int cur_waypoint;
   void follow_path(float dt);
-
   void update(float dt);
 };
 

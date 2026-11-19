@@ -28,6 +28,11 @@ bool Arena::isWall(int _row, int _col) {
   int tile_val = tile(_row, _col);
   return tile_val != 0 ? true : false;
 }
+bool Arena::isWall(int tile_) {
+  auto [row,col] = tile_to_row_col(tile_);
+  int tile_val = tile(row, col);
+  return tile_val != 0 ? true : false;
+}
 int Arena::tile(int r, int c) {
   if (r >= rows || r < 0 || c >= cols || c < 0) {
     //__debugbreak();
