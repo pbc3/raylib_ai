@@ -154,6 +154,18 @@ Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet){
     return nullptr;
 }
 
+void spawn_bullet(std::vector<Bullet>& bullets, Vec2 spawn_pos, Vec2 direction, Team team){
+  Bullet b;
+  b.world_pos = spawn_pos;
+  b.velocity = direction * b.bullet_speed;
+  b.expired = false;
+  b.team = team;
+  b.size = 5.0f;
+  bullets.push_back(b);
+}
+
+
+
 void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies,  std::vector<Bullet>& bullets, input_state input) {
   // ideally, reduce this to contained function calls. enemy.update(dt);player.update(dt);bullet.update(dt);
     // todo - movement needs more work. what if the player can touch more than 4
@@ -200,17 +212,32 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
          player.world_pos.y = new_y;
       }
       
+
+            // enemy update
+      for(Enemy& enemy : enemies){
+        enemy.follow_path(dt,arena,player.world_pos);
+      }
+
+
       {
       // bullets
       if (input.firing) {
-        Bullet b;
-        b.world_pos = player.world_pos;
-        b.velocity = input.mouse_dir * b.bullet_speed;
-        b.expired = false;
-        b.team = Team::PLAYER;
-        bullets.push_back(b);
-        // spawn_bullet(Vec2 spawn_pos, Vec2 velocity_dir, bullets)
+        spawn_bullet(bullets, player.world_pos, input.mouse_dir, Team::PLAYER);
       }
+
+      auto cur_time = std::chrono::steady_clock::now();
+      auto cooldown_interval = std::chrono::seconds(3);
+      if(!enemies.empty()){
+      if(cur_time - enemies[0].last_shot_at >= cooldown_interval){
+        // shoot again after cooldown
+        Vec2 direction = player.world_pos - enemies[0].world_pos;
+        direction.normalise();
+     
+        spawn_bullet(bullets,enemies[0].world_pos,direction,Team::ENEMY);
+        enemies[0].last_shot_at = cur_time;
+      }}
+      
+
 
 
       for (Bullet &b : bullets) {
@@ -229,7 +256,6 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
         }
       }
     
-    std::cout << enemies[0].dead << "\n";
     // remove dead bullets
       std::erase_if(bullets,[](Bullet& b){
         return b.expired;
@@ -239,10 +265,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
         return e.dead;
       });
   
-      // enemy update
-      for(Enemy& enemy : enemies){
-        enemy.follow_path(dt,arena,player.world_pos);
-      }
+
     }
   }
 
@@ -266,6 +289,8 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
     player.size = 25.f;
 
     std::vector<Enemy> enemies;
+    // todo - factor into a spawn enemy function, then factor that all into a setup_game() including the enemy, initial path, and the spawning of the
+    // needed stuff for section 2
     Enemy enemy{};
     enemy.world_pos = {456,400};
     enemy.velocity = {350,350};
@@ -274,7 +299,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
     enemy1.world_pos = {657,400};
     enemy1.velocity = {300,300};
     enemy1.size = 20.f;
-
+    enemy1.health = 100; enemy.health = 100; player.health = 100;
     enemy.dead = false; enemy1.dead = false;
     // setup initial paths
     
@@ -293,7 +318,8 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
       enemy_agent.player_tile = player_tile;
       enemy_agent.cur_waypoint = 0;
     }
-
+    auto cur_time = std::chrono::steady_clock::now();
+    enemies[0].last_shot_at = cur_time;
 
     std::vector<Bullet> bullets;
 
@@ -318,7 +344,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
       BeginMode2D(camera);
       //  todo - stop drawing the grid every frame, draw it once into a texture,
       draw_grid(arena);
-      for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, b.size, RED);}
+      for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, b.size, BLACK);}
       Vec2 player_top_left = player.world_pos - Vec2{player.size / 2, player.size / 2};
        DrawRectangleV(*reinterpret_cast<Vector2 *>(&player_top_left),{player.size, player.size}, BLUE);
       for(int i = 0; i < enemies.size(); i++){
@@ -329,7 +355,27 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
       }
 
       DrawRectangleLines(player_top_left.x, player_top_left.y, player.size,player.size, RAYWHITE);
+float half = player.size / 2;
+float gap = 10.0f;
 
+    Vec2 dir = { input.mouse_dir.x, input.mouse_dir.y };
+    Vec2 perpendicular = { -dir.y, dir.x };
+
+    Vec2 tip = player.world_pos + dir * (half + gap);
+
+    Vec2 top = player.world_pos
+        + dir * half
+        - perpendicular * (half / 2);
+
+    Vec2 bottom = player.world_pos
+        + dir * half
+        + perpendicular * (half / 2);
+          DrawTriangle(
+        { tip.x, tip.y },
+        { top.x, top.y },
+        { bottom.x, bottom.y },
+        RED
+    );
       if(draw_paths){
       for(Enemy& enemy : enemies){
       for(auto waypoint_pos : enemy.cur_path){

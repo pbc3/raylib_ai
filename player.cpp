@@ -7,7 +7,7 @@
 
  float& Player::take_damage(float dmg){
     health -= dmg;
-    if(dmg <= 0){
+    if(health <= 0){
         dead = true;
     }
     return health;
