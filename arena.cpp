@@ -10,6 +10,7 @@ bool out_of_bounds(Arena& arena, Vec2 requested_pos){
     }
     return false;
 };
+
   bool valid_movement(Arena& arena, Vec2 requested_pos, float size){
       // requested_pos is the centre of the entity
       //  calculate 4 corners from a centre pos

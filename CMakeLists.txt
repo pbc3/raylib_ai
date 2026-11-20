@@ -5,7 +5,7 @@ project(GameAI LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(GameAI main.cpp arena.cpp utils.cpp enemy.cpp player.cpp pathfinding.cpp)
+add_executable(GameAI main.cpp arena.cpp utils.cpp enemy.cpp player.cpp pathfinding.cpp entity.cpp bullet.cpp)
 
 
 

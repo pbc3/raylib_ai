@@ -1,130 +1,160 @@
-  #include "arena.h"
-  #include "raylib.h"
-  #include <algorithm>
-  #include <cassert>
-  #include <cmath>
-  #include <iostream>
-  #include <queue>
-  #include <vector>
-  #include <unordered_map>
-  #include "enemy.h"
-  #include "pathfinding.h"
-  #include "player.h"
 
+#include "raylib.h"
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <iostream>
+#include <queue>
+#include <vector>
+#include <unordered_map>
 
-  constexpr int SCREEN_WIDTH = 1920;
-  constexpr int SCREEN_HEIGHT = 1080;
-  constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE;   // screen x / tile
-  constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
-  constexpr Color GRID_COLOUR = {48, 59, 72, 255};
-  // tile centring, possibly needed.
-  // constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
-  // constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
+#include "arena.h"
+#include "enemy.h"
+#include "player.h"
+#include "bullet.h"
+#include "pathfinding.h"
 
+constexpr int SCREEN_WIDTH = 1920;
+constexpr int SCREEN_HEIGHT = 1080;
+constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE;   // screen x / tile
+constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
+constexpr Color GRID_COLOUR = {48, 59, 72, 255};
+// tile centring, possibly needed.
+// constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
+// constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
 
+std::vector<Color> colours{WHITE,RED};
+
+const float BULLET_DAMAGE = 20.f;
 
   // todo - factor these bools into a single enum, with helper functions like
   // is_move_up etc
-  enum class MovementState : uint8_t {
-    move_up = 0, move_down, move_left, move_right
-  };
+enum class MovementState : uint8_t {
+  move_up = 0, move_down, move_left, move_right
+};
 
-  struct input_state {
-    bool move_up;
-    bool move_down;
-    bool move_left;
-    bool move_right;
-    MovementState movement_state;
-    bool firing;
-    Vec2 mouse_dir;
-  };
+struct input_state {
+  bool move_up;
+  bool move_down;
+  bool move_left;
+  bool move_right;
+  MovementState movement_state;
+  bool firing;
+  Vec2 mouse_dir;
+};
 
 
-  input_state handle_input(Camera2D camera, Player &player) {
-    input_state input{false, false, false, false,MovementState::move_down, false, {0, 0}};
-    if (IsKeyDown(KEY_W)) {
-      input.move_up = true;
-    }
-    if (IsKeyDown(KEY_A)) {
-      input.move_left = true;
-    }
-    if (IsKeyDown(KEY_S)) {
-      input.move_down = true;
-    }
-    if (IsKeyDown(KEY_D)) {
-      input.move_right = true;
-    }
-
-    // bullets
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-      input.firing = true;
-    }
-    // aim direction
-    Vector2 screen_mouse_pos = GetMousePosition();
-    Vector2 world_mouse_pos = GetScreenToWorld2D(screen_mouse_pos, camera);
-    input.mouse_dir =
-        (*reinterpret_cast<Vec2 *>(&world_mouse_pos) - player.world_pos)
-            .normalised();
-    // i want to draw a tiny triangle,on the edge of the box, in the direction we
-    // are facing
-
-    return input;
+input_state handle_input(Camera2D camera, Player &player) {
+  input_state input{false, false, false, false,MovementState::move_down, false, {0, 0}};
+  if (IsKeyDown(KEY_W)) {
+    input.move_up = true;
+  }
+  if (IsKeyDown(KEY_A)) {
+    input.move_left = true;
+  }
+  if (IsKeyDown(KEY_S)) {
+    input.move_down = true;
+  }
+  if (IsKeyDown(KEY_D)) {
+    input.move_right = true;
   }
 
+  // bullets
+  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    input.firing = true;
+  }
+  // aim direction
+  Vector2 screen_mouse_pos = GetMousePosition();
+  Vector2 world_mouse_pos = GetScreenToWorld2D(screen_mouse_pos, camera);
+  input.mouse_dir =
+      (*reinterpret_cast<Vec2 *>(&world_mouse_pos) - player.world_pos)
+          .normalised();
+  // i want to draw a tiny triangle,on the edge of the box, in the direction we
+  // are facing
 
-  float bullet_speed = 200.f;
-  struct Bullet {
-    Vec2 world_pos;
-    Vec2 velocity;
-  };
+  return input;
+}
 
-  void draw_arena() {
-    for (int i = 0; i < ARENA_HEIGHT; i++) {
-      for (int j = 0; j < ARENA_WIDTH; j++) {
-        // x = column * 50
-        // y = row * 50
-        int x = j * TILE_SIZE;
-        int y = i * TILE_SIZE;
-        DrawRectangleLines(x, y, TILE_SIZE, TILE_SIZE, BLUE);
-      }
+
+
+
+void draw_arena() {
+  for (int i = 0; i < ARENA_HEIGHT; i++) {
+    for (int j = 0; j < ARENA_WIDTH; j++) {
+      // x = column * 50
+      // y = row * 50
+      int x = j * TILE_SIZE;
+      int y = i * TILE_SIZE;
+      DrawRectangleLines(x, y, TILE_SIZE, TILE_SIZE, BLUE);
     }
-    return;
+  }
+  return;
+}
+
+void draw_grid(Arena &arena) {
+  for (int i = 0; i < arena.rows; i++) {
+    for (int j = 0; j < arena.cols; j++) {
+      // x = column * 50
+      // y = row * 50
+      int x = j * TILE_SIZE;
+      int y = i * TILE_SIZE;
+      if (arena.isWall(i, j)) {
+        DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, {100, 125, 150, 255});
+      }
+      // if (arena.grid[i][j] == 1) {
+      //	DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, { 100, 125, 150, 255
+      //});
+      // }
+    }
   }
 
-  void draw_grid(Arena &arena) {
-    for (int i = 0; i < arena.rows; i++) {
-      for (int j = 0; j < arena.cols; j++) {
-        // x = column * 50
-        // y = row * 50
-        int x = j * TILE_SIZE;
-        int y = i * TILE_SIZE;
-        if (arena.isWall(i, j)) {
-          DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, {100, 125, 150, 255});
-        }
-        // if (arena.grid[i][j] == 1) {
-        //	DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, { 100, 125, 150, 255
-        //});
-        // }
+  // <= because we want to draw edges
+  for (int i = 0; i <= arena.rows; i++) {
+    DrawLine(0, i * TILE_SIZE, arena.map_width, i * TILE_SIZE, GRID_COLOUR);
+  }
+
+  for (int j = 0; j <= arena.cols; j++) {
+    DrawLine(j * TILE_SIZE, 0, j * TILE_SIZE, arena.map_height, GRID_COLOUR);
+  }
+
+  DrawRectangleLines(0, 0, arena.map_width, arena.map_height,
+                    {141, 169, 196, 255});
+};
+
+
+
+bool bullet_hit(Bullet& bullet, Entity& entity){
+    Rectangle r;
+    float half_size = entity.size / 2;
+    r.x = entity.world_pos.x - half_size;
+    r.y = entity.world_pos.y - half_size;
+    r.width = half_size * 2;
+    r.height = half_size * 2;
+  return CheckCollisionCircleRec(*reinterpret_cast<Vector2*>(&bullet.world_pos),bullet.size,r);
+};
+
+Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet){
+  // loop over each enemy, and then the player. see if the bullet collides
+  // check enemies
+  if(bullet.team == Team::PLAYER){
+    for(Enemy& enemy : enemies){
+      if(bullet_hit(bullet,enemy)){
+        bullet.expired = true;
+        return &enemy;
       }
     }
-
-    // <= because we want to draw edges
-    for (int i = 0; i <= arena.rows; i++) {
-      DrawLine(0, i * TILE_SIZE, arena.map_width, i * TILE_SIZE, GRID_COLOUR);
+  }
+    else{
+      // check whether bullet hit player
+      if(bullet_hit(bullet,player)){
+        bullet.expired = true;
+        return &player;
+      }
     }
+    return nullptr;
+}
 
-    for (int j = 0; j <= arena.cols; j++) {
-      DrawLine(j * TILE_SIZE, 0, j * TILE_SIZE, arena.map_height, GRID_COLOUR);
-    }
-
-    DrawRectangleLines(0, 0, arena.map_width, arena.map_height,
-                      {141, 169, 196, 255});
-  };
-
-std::vector<Bullet> bullets;
-
-
-void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state input) {
+void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies,  std::vector<Bullet>& bullets, input_state input) {
   // ideally, reduce this to contained function calls. enemy.update(dt);player.update(dt);bullet.update(dt);
     // todo - movement needs more work. what if the player can touch more than 4
     // tiles at once?
@@ -175,62 +205,98 @@ void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state in
       if (input.firing) {
         Bullet b;
         b.world_pos = player.world_pos;
-        b.velocity = input.mouse_dir * bullet_speed;
+        b.velocity = input.mouse_dir * b.bullet_speed;
+        b.expired = false;
+        b.team = Team::PLAYER;
         bullets.push_back(b);
+        // spawn_bullet(Vec2 spawn_pos, Vec2 velocity_dir, bullets)
       }
+
 
       for (Bullet &b : bullets) {
-        if ( b.world_pos.y > arena.map_height ||  b.world_pos.x > arena.map_width ||  b.world_pos.x <= 0 ||
-          b.world_pos.y <= 0){
-            continue;}
-        // if(b.tile == enemy.tile || player.tile){take damage...}
-        b.world_pos += b.velocity * dt;
+        Vec2 new_bulet_pos = b.world_pos + b.velocity * dt;
+        // check whether bullet is out of bounds
+        if(valid_movement(arena,new_bulet_pos,b.size)){
+          b.world_pos = new_bulet_pos;
+          // check whether bullet hit enemy or player
+          Entity* hit_target = hit_entity(player,enemies,b);
+          if(hit_target){
+            hit_target->take_damage(BULLET_DAMAGE);
+          }
+        }
+        else{
+          b.expired = true;
+        }
       }
-
     
-      // enemy update
-      // for(Enemy& enemy : enemies)
-        // request new path
-        enemy.follow_path(dt,arena,player.world_pos);
+    std::cout << enemies[0].dead << "\n";
+    // remove dead bullets
+      std::erase_if(bullets,[](Bullet& b){
+        return b.expired;
+      });
   
+      std::erase_if(enemies,[](Enemy& e){
+        return e.dead;
+      });
+  
+      // enemy update
+      for(Enemy& enemy : enemies){
+        enemy.follow_path(dt,arena,player.world_pos);
+      }
     }
   }
 
 
 
   int main() {
+
     SetTargetFPS(360);
+
     // todo - correct path should be assets/arena/arena.csv
     auto csv = R"(C:\dev\gai_cwk\assets\arena.csv)";
     Arena arena(csv);
-    const auto adjacent = neighbours(arena, 146);
-    for(auto [cost, node] : adjacent){
-      std::cout << "cost : " << cost << " node : " << node << "\n";
-    }
+
+
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
 
+    //gameplay setup
     Player player{};
     player.world_pos = {100,100};
-    player.velocity = {350, 350};
+    player.velocity = {550, 550};
     player.size = 25.f;
 
-
+    std::vector<Enemy> enemies;
     Enemy enemy{};
-    enemy.world_pos = {657,400};
+    enemy.world_pos = {456,400};
     enemy.velocity = {350,350};
     enemy.size = 30.f;
+    Enemy enemy1{};
+    enemy1.world_pos = {657,400};
+    enemy1.velocity = {300,300};
+    enemy1.size = 20.f;
 
+    enemy.dead = false; enemy1.dead = false;
     // setup initial paths
+    
+    enemies.push_back(enemy);
+    enemies.push_back(enemy1);
+
     int player_tile = arena.vec2_to_tile(player.world_pos);
-    int enemy_tile = arena.vec2_to_tile(enemy.world_pos);
-    auto path = astar(arena,enemy_tile,player_tile);
-    std::vector<Vec2> world_path;
-    for(int p : path){
-      world_path.push_back(arena.tile_to_world(p));
+    for(Enemy& enemy_agent : enemies){
+      int enemy_tile = arena.vec2_to_tile(enemy_agent.world_pos);
+      auto path = astar(arena,enemy_tile,player_tile);
+      std::vector<Vec2> world_path;
+      for(int p : path){
+       world_path.push_back(arena.tile_to_world(p));
+      }
+      enemy_agent.cur_path = world_path;
+      enemy_agent.player_tile = player_tile;
+      enemy_agent.cur_waypoint = 0;
     }
-    enemy.cur_path = world_path;
-    enemy.cur_waypoint = 0;
-    enemy.player_tile = player_tile;
+
+
+    std::vector<Bullet> bullets;
+
 
     // todo - clamp camera to map edges
     Camera2D camera = {0};
@@ -238,12 +304,12 @@ void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state in
     camera.offset = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
     bool draw_paths = true;
     while (!WindowShouldClose()) {
-      // if(IsKeyDown(KEY_R)) {
-      //  reload csv
-      // }
+      if(IsKeyDown(KEY_R)) {
+       arena.grid[19][15] = !arena.grid[19][15];
+      }
       float dt = GetFrameTime();
       input_state input = handle_input(camera, player);
-      update(arena, dt, player, enemy, input);
+      update(arena, dt, player, enemies,bullets, input);
 
       //render
       BeginDrawing();
@@ -252,18 +318,25 @@ void update(Arena &arena, float dt, Player &player, Enemy& enemy, input_state in
       BeginMode2D(camera);
       //  todo - stop drawing the grid every frame, draw it once into a texture,
       draw_grid(arena);
-      for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, 3, RED);}
+      for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, b.size, RED);}
       Vec2 player_top_left = player.world_pos - Vec2{player.size / 2, player.size / 2};
-      Vec2 enemy_top_left = enemy.world_pos - Vec2{enemy.size / 2, enemy.size / 2};
-      DrawRectangleV(*reinterpret_cast<Vector2 *>(&player_top_left),{player.size, player.size}, BLUE);
-      DrawRectangleV(*reinterpret_cast<Vector2 *>(&enemy_top_left),{enemy.size, enemy.size}, BLACK);
+       DrawRectangleV(*reinterpret_cast<Vector2 *>(&player_top_left),{player.size, player.size}, BLUE);
+      for(int i = 0; i < enemies.size(); i++){
+        auto enemy = enemies[i];
+        Vec2 enemy_top_left = enemy.world_pos - Vec2{enemy.size / 2, enemy.size / 2};
+        DrawRectangleV(*reinterpret_cast<Vector2 *>(&enemy_top_left),{enemy.size, enemy.size}, colours[i]);
+        DrawText(TextFormat("%i", (int) enemy.health), enemy.world_pos.x, enemy.world_pos.y, 20, GREEN);
+      }
+
       DrawRectangleLines(player_top_left.x, player_top_left.y, player.size,player.size, RAYWHITE);
 
       if(draw_paths){
+      for(Enemy& enemy : enemies){
       for(auto waypoint_pos : enemy.cur_path){
         DrawCircle(waypoint_pos.x, waypoint_pos.y, 2.2, RED);
       }
     }
+  }
 
     EndMode2D();
     EndDrawing();

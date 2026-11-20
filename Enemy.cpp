@@ -12,19 +12,21 @@ void Enemy::replan(Arena& arena, Vec2 player_pos){
         cur_path = wp;
         player_tile = arena.vec2_to_tile(player_pos);
         cur_waypoint=0;
+        return;
         }
+        cur_path = {};
       }
 }
 void Enemy::follow_path(float dt, Arena& arena, Vec2 player_pos){
-    if(cur_path.empty()){
-        return;
-    }
+
     if(cur_waypoint >= cur_path.size()){
     //   return world_pos;
      replan(arena,player_pos);
      return; 
     }
-
+    if(cur_path.empty()){
+        return;
+    }
     Vec2 target_pos = cur_path[cur_waypoint];
     float dist = world_pos.distance(target_pos);
     // reached target
@@ -57,7 +59,10 @@ void Enemy::follow_path(float dt, Arena& arena, Vec2 player_pos){
     // world_pos += dir * movement_step;
   }
 
-//   void Enemy::TakeDamage(float dmg){
-//     health-=dmg;
-//     std::clamp(health, 0, 100);
-//   }
+  float& Enemy::take_damage(float dmg){
+    health -= dmg;
+    if(health <= 0){
+        dead = true;
+    }
+   return health;
+  }
