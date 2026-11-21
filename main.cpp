@@ -216,7 +216,15 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
 
             // enemy update
       for(Enemy& enemy : enemies){
-        enemy.follow_path(dt,arena,player.world_pos);
+        enemy.perceptions.update(&enemy,arena,player);
+        if(enemy.perceptions.spotted_player){
+          enemy.replan(arena,enemy.perceptions.last_seen_player);
+        }
+        else{
+          // rotate.. do this in patrol, after the transitions checks, before? moving to a location. 
+          enemy.forward = {-enemy.forward.y,enemy.forward.x};
+        }
+        enemy.follow_path(dt,arena);
       }
 
 
@@ -299,29 +307,35 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
     enemy.world_pos = {456,400};
     enemy.velocity = {350,350};
     enemy.size = 30.f;
+    enemy.dead = false; 
+    enemy.health = 100;
+    enemy.perceptions.spotted_player = false;
+    enemy.forward = {-1,0.f};
     Enemy enemy1{};
     enemy1.world_pos = {657,400};
     enemy1.velocity = {300,300};
     enemy1.size = 20.f;
-    enemy1.health = 100; enemy.health = 100; player.health = 100;
-    enemy.dead = false; enemy1.dead = false;
+    enemy1.health = 100; player.health = 100;
+    enemy1.dead = false;
+    enemy1.perceptions.spotted_player = false;
+    enemy1.forward = {-1,0.f};
     // setup initial paths
     
     enemies.push_back(enemy);
     enemies.push_back(enemy1);
 
-    int player_tile = arena.vec2_to_tile(player.world_pos);
-    for(Enemy& enemy_agent : enemies){
-      int enemy_tile = arena.vec2_to_tile(enemy_agent.world_pos);
-      auto path = astar(arena,enemy_tile,player_tile);
-      std::vector<Vec2> world_path;
-      for(int p : path){
-       world_path.push_back(arena.tile_to_world(p));
-      }
-      enemy_agent.cur_path = world_path;
-      enemy_agent.player_tile = player_tile;
-      enemy_agent.cur_waypoint = 0;
-    }
+    // int player_tile = arena.vec2_to_tile(player.world_pos);
+    // for(Enemy& enemy_agent : enemies){
+    //   int enemy_tile = arena.vec2_to_tile(enemy_agent.world_pos);
+    //   auto path = astar(arena,enemy_tile,player_tile);
+    //   std::vector<Vec2> world_path;
+    //   for(int p : path){
+    //    world_path.push_back(arena.tile_to_world(p));
+    //   }
+    //   enemy_agent.cur_path = world_path;
+    //   enemy_agent.player_tile = player_tile;
+    //   enemy_agent.cur_waypoint = 0;
+    // }
     auto cur_time = std::chrono::steady_clock::now();
     enemies[0].last_shot_at = cur_time;
 

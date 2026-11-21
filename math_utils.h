@@ -43,6 +43,10 @@ struct Vec2 {
     return {x / len, y / len};
   }
 
+
+  float dot(Vec2 rhs){
+      return (x * rhs.x) + (y * rhs.y);
+  }
   Vec2 operator-(Vec2 rhs) { return {x - rhs.x, y - rhs.y}; }
   Vec2 &operator*=(float scalar) {
     this->x *= scalar;
@@ -56,4 +60,13 @@ struct Vec2 {
     this->y += rhs.y;
     return *this;
   }
+};
+
+
+struct Ray_{
+	Vec2 origin;
+	Vec2 direction;
+	Vec2 at(float t) {
+		return origin + (direction * t);
+	}	
 };

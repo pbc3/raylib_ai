@@ -6,7 +6,17 @@
 #include <algorithm>
 #include <chrono>
 #include "entity.h"
+#include "fsm.h"
+#include "player.h"
+#include <numbers>
+struct Enemy;
 
+struct Perceptions{
+  Vec2 last_seen_player;
+  bool spotted_player;
+  float view_angle_rads = 1.5708f; // 90* in radians
+  void update(Enemy* agent, Arena& arena, Player& player);
+};
 
 struct Enemy : public Entity{
   // Vec2 world_pos;
@@ -14,14 +24,21 @@ struct Enemy : public Entity{
   float threshold = .2f;
   // float health = 100;
   // float size;
-  int player_tile;
+  int goal_tile;
   std::chrono::steady_clock::time_point last_shot_at;
   std::vector<Vec2> cur_path;
   int cur_waypoint;
-  void follow_path(float dt, Arena& arena, Vec2 player_pos);
+
+  // StateMachine& fsm;
+  Perceptions perceptions;
+  Vec2 forward;
+  Vec2 player_pos;
+
+  void follow_path(float dt, Arena& arena);
   void update(float dt);
   void replan(Arena& arena, Vec2 player_pos);
   float& take_damage(float dmg);
-
 };
+
+
 
