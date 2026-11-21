@@ -7,10 +7,6 @@
 
 */
 
-
-struct Blackboard{
-    
-}
 struct StateMachine;
 struct State {
 	virtual void update(StateMachine& controller) = 0;

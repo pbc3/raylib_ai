@@ -7,6 +7,7 @@
 #include <queue>
 #include <vector>
 #include <unordered_map>
+#include <filesystem>
 
 #include "arena.h"
 #include "enemy.h"
@@ -14,8 +15,8 @@
 #include "bullet.h"
 #include "pathfinding.h"
 
-constexpr int SCREEN_WIDTH = 1920;
-constexpr int SCREEN_HEIGHT = 1080;
+constexpr int SCREEN_WIDTH = 1280;
+constexpr int SCREEN_HEIGHT = 720;
 constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE;   // screen x / tile
 constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
 constexpr Color GRID_COLOUR = {48, 59, 72, 255};
@@ -236,7 +237,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
         spawn_bullet(bullets,enemies[0].world_pos,direction,Team::ENEMY);
         enemies[0].last_shot_at = cur_time;
       }}
-      
+
 
 
 
@@ -273,11 +274,14 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
 
   int main() {
 
-    SetTargetFPS(360);
+    SetTargetFPS(120);
 
-    // todo - correct path should be assets/arena/arena.csv
-    auto csv = R"(C:\dev\gai_cwk\assets\arena.csv)";
-    Arena arena(csv);
+    // get path realtive to build-dir
+    const auto csv = std::filesystem::path(GetApplicationDirectory()) / "assets" / "arena.csv";
+    // std::string csv = R"(C:\dev\gai_cwk\assets\arena.csv)";
+    // csv = csvv.string();
+    // auto cs = ".assets\arena.csv";
+    Arena arena(csv.string());
 
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
@@ -355,27 +359,30 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
       }
 
       DrawRectangleLines(player_top_left.x, player_top_left.y, player.size,player.size, RAYWHITE);
-float half = player.size / 2;
-float gap = 10.0f;
 
-    Vec2 dir = { input.mouse_dir.x, input.mouse_dir.y };
-    Vec2 perpendicular = { -dir.y, dir.x };
+      //Draw Aim Triangle
+      float half = player.size / 2;
+      float gap = 10.0f;
 
-    Vec2 tip = player.world_pos + dir * (half + gap);
+          Vec2 dir = { input.mouse_dir.x, input.mouse_dir.y };
+          Vec2 perpendicular = { -dir.y, dir.x };
 
-    Vec2 top = player.world_pos
-        + dir * half
-        - perpendicular * (half / 2);
+          Vec2 tip = player.world_pos + dir * (half + gap);
 
-    Vec2 bottom = player.world_pos
-        + dir * half
-        + perpendicular * (half / 2);
-          DrawTriangle(
-        { tip.x, tip.y },
-        { top.x, top.y },
-        { bottom.x, bottom.y },
-        RED
-    );
+          Vec2 top = player.world_pos
+              + dir * half
+              - perpendicular * (half / 2);
+
+          Vec2 bottom = player.world_pos
+              + dir * half
+              + perpendicular * (half / 2);
+                DrawTriangle(
+              { tip.x, tip.y },
+              { top.x, top.y },
+              { bottom.x, bottom.y },
+              RED
+          );
+
       if(draw_paths){
       for(Enemy& enemy : enemies){
       for(auto waypoint_pos : enemy.cur_path){

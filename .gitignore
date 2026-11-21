@@ -9,7 +9,7 @@
 *.sdf
 *.opensdf
 *.ipch
-
+/build-*/
 # Build output directories
 build/
 out/

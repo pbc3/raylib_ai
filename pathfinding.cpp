@@ -1,5 +1,5 @@
 #include "pathfinding.h"
-
+#include <algorithm>
 
 int heuristic(int start, int target, int cols){
   // return rhs.distance(lhs);return 0;
