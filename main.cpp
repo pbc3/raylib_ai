@@ -26,7 +26,6 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 
 std::vector<Color> colours{WHITE,RED};
 
-const float BULLET_DAMAGE = 20.f;
 bool bullet_hit(Bullet& bullet, Entity& entity){
     Rectangle r;
     float half_size = entity.size / 2;
@@ -58,15 +57,7 @@ Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet){
     return nullptr;
 }
 
-void spawn_bullet(std::vector<Bullet>& bullets, Vec2 spawn_pos, Vec2 direction, Team team){
-  Bullet b;
-  b.world_pos = spawn_pos;
-  b.velocity = direction * b.bullet_speed;
-  b.expired = false;
-  b.team = team;
-  b.size = 5.0f;
-  bullets.push_back(b);
-}
+
 
   // todo - factor these bools into a single enum, with helper functions like
   // is_move_up etc
@@ -254,7 +245,10 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
       }
       
 
-            // enemy update
+        // enemy update
+        for(Enemy& enemy : enemies){
+          enemy.update(arena,player,dt,bullets);
+        }
       for(Enemy& enemy : enemies){
         enemy.perceptions.update(&enemy,arena,player);
         if(enemy.perceptions.spotted_player){
@@ -318,7 +312,29 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
     }
   }
 
+void draw_fov_cone(Enemy& enemy){
+  float half_fov =  enemy.perceptions.view_angle_rads / 2.f;
+  float dir_ang = std::atan2f(enemy.forward.y,enemy.forward.x);
+  std::vector<Vector2> points;
+  points.push_back({enemy.world_pos.x,enemy.world_pos.y});
+  for(float angle = -half_fov; angle <= half_fov; angle+=0.05f){
+    Vector2 point = {enemy.world_pos.x + std::cosf(dir_ang + angle) * enemy.perceptions.max_distance,
+     enemy.world_pos.y + std::sinf(dir_ang + angle) * enemy.perceptions.max_distance
+    };
+      points.push_back(point);
+  }
 
+DrawLineV(
+    {enemy.world_pos.x, enemy.world_pos.y},
+    {
+        enemy.world_pos.x + enemy.forward.x * enemy.perceptions.max_distance,
+        enemy.world_pos.y + enemy.forward.y * enemy.perceptions.max_distance
+    },
+    RED
+);
+ DrawTriangleFan(points.data(), (int)points.size(), Fade(YELLOW, 0.3f));
+ DrawTriangleStrip(points.data(), (int)points.size(), Fade(YELLOW, 0.3f));
+}
 
   int main() {
 
@@ -400,6 +416,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
       ClearBackground({32, 38, 48, 255});
       camera.target = {player.world_pos.x,player.world_pos.y};
       BeginMode2D(camera);
+      
       //  todo - stop drawing the grid every frame, draw it once into a texture,
       draw_grid(arena);
       for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, b.size, BLACK);}
@@ -439,6 +456,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
 
       if(draw_paths){
       for(Enemy& enemy : enemies){
+      draw_fov_cone(enemy);
       for(auto waypoint_pos : enemy.cur_path){
         DrawCircle(waypoint_pos.x, waypoint_pos.y, 2.2, RED);
       }
@@ -447,8 +465,9 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
 
     EndMode2D();
     EndDrawing();
-    DrawText(TextFormat("FPS: %i", GetFPS()), 10, 10, 20, GREEN);
-    DrawText(TextFormat("Health: %i", (int) player.health), 160, 10, 20, GREEN);
+    DrawText(TextFormat("Enemy1 State:: %i", enemies[0].fsm.state), 10, 10, 20, GREEN);
+    // DrawText(TextFormat("FPS: %i", GetFPS()), 10, 10, 20, GREEN);
+    // DrawText(TextFormat("Health: %i", (int) player.health), 160, 10, 20, GREEN);
   }
 
   CloseWindow();

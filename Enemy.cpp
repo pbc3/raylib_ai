@@ -1,11 +1,11 @@
 #include "enemy.h"
 #include "arena.h"
 
-void Enemy::update(Arena& arena, Player& player, float dt){
+void Enemy::update(Arena& arena, Player& player, float dt, std::vector<Bullet>& bullets){
     // sense
     perceptions.update(this, arena,player);
     // think & act
-    fsm.update(*this,dt);
+    fsm.update(*this,dt,arena,player,bullets);
 }
 void Enemy::replan(Arena& arena, Vec2 goal_pos){
     if(goal_tile != arena.vec2_to_tile(goal_pos)){
@@ -75,17 +75,38 @@ void Enemy::follow_path(float dt, Arena& arena){
    return health;
   }
 
+  void Enemy::patrol(Arena& arena, float dt){
+    Vec2 cur_goal = patrol_targets[current_patrol_idx];
+
+    if(cur_path.empty()){
+      replan(arena,cur_goal);
+    }
+    if(cur_goal.distance(world_pos) <= 10.f){
+        // reached current patrol goal
+        current_patrol_idx++;
+        if(current_patrol_idx >= patrol_targets.size()){
+            current_patrol_idx = 0;
+        }
+        cur_goal = patrol_targets[current_patrol_idx];
+        replan(arena,cur_goal);
+    }
+    // move toward cur goal... or do nothing, because we are already moving?
+    follow_path(dt,arena);
+}
+
+
  void Perceptions::update(Enemy* agent, Arena& arena, Player& player){
     // just vision for now.  
     // shoot raycasts from enemy position. first will do all sides, then will pick a front facing dir
-      spotted_player = false;
+    spotted_player = false;
+    in_range = false;
 
     // 1 - check whether player is within range
     Vec2 to_player = player.world_pos - agent->world_pos;
     // todo - use squared distance instead
     float dist = to_player.length();
 
-    if(dist > 500.0f){
+    if(dist > max_distance){
       return;
     }
     if(dist < 0.0001){
@@ -121,102 +142,28 @@ void Enemy::follow_path(float dt, Arena& arena){
     }
    spotted_player = true;
    last_seen_player = player.world_pos;
+   
+   // in range?
+   const float ENGAGE_RANGE = 350.f;
+   if(dist < ENGAGE_RANGE){
+    in_range = true;
+   }
+  
   };
 
-  enum class EnemyState{
-	PATROL, CHASE, ENGAGE
-};
 
-struct EnemyStateMachine {
 
-	EnemyState state = EnemyState::CHASE;
-	// virtual ~StateMachine() = default;
-	std::vector<int> patrol_locations = {156,137,203};
-	void update(Enemy& agent,float dt, Arena& arena){
-
-		switch(state){
-			case EnemyState::PATROL:
-      // check perceptions for transitions
-      if(agent.perceptions.spotted_player){
-        change_state(agent,EnemyState::CHASE);
-        return;
-      }
-      //else
-        agent.follow_path(dt,arena);
-			break;
-
-			case EnemyState::CHASE:
-        // check perceptions for transitions
-        if(agent.perceptions.in_range){
-          change_state(agent,EnemyState::ENGAGE);
-          return;
-        }
-        if(agent.perceptions.)
-       //else
-
-			break;
-
-			case EnemyState::ENGAGE:
-      // check perceptions for transitions
-
-      //else
-
-			break;
-		}
-	}
-
-	void change_state(Arena& arena, Enemy& agent, EnemyState next_state) {
-		on_exit();
-		state = next_state;
-		on_enter();
-	}
-
-  void engage_player(Arena& arena, Enemy& agent, float dt, Player& player){
+void Enemy::engage_player(Arena& arena, float dt, Player& player, std::vector<Bullet>& bullets){
       auto cur_time = std::chrono::steady_clock::now();
       auto cooldown_interval = std::chrono::seconds(3);
-      if(cur_time - agent.last_shot_at >= cooldown_interval){
+      if(cur_time - last_shot_at >= cooldown_interval){
         // shoot again after cooldown
-        Vec2 direction = player.world_pos - agent.world_pos;
+        Vec2 direction = player.world_pos -world_pos;
         direction.normalise();
-        arena.spawn_bullet(agent.world_pos,direction,Team::ENEMY);
-        agent.last_shot_at = cur_time;
-      }}
-
-  }
-	void on_enter(Enemy& agent, Arena& arena){
-		// enter new state
-			switch(state){
-			case EnemyState::PATROL:
-			// enter
-			break;
-
-			case EnemyState::CHASE:
-			// enter
-      agent.replan(arena,agent.perceptions.last_seen_player);
-			break;
-
-			case EnemyState::ENGAGE:
-			// enter
-			break;
-		}
-	};
-	void on_exit(Enemy& agent){
-		// exit cur state
-			switch(state){
-			case EnemyState::PATROL:
-			// exit
-			break;
-
-			case EnemyState::CHASE:
-			// exit
-			break;
-
-			case EnemyState::ENGAGE:
-			// exit
-			break;
-		}
-	}
-};
+        spawn_bullet(bullets,world_pos,direction,Team::ENEMY);
+        last_shot_at = cur_time;
+      }
+    }
 
 
   /*

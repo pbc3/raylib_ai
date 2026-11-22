@@ -1,5 +1,6 @@
 #pragma once
-// #include "entity.h"
+#include "entity.h"
+#include <vector>
 
 
 struct Bullet : public Entity {
@@ -10,3 +11,5 @@ struct Bullet : public Entity {
     Team team;
     float bullet_speed = 200.f;
   };
+
+void spawn_bullet(std::vector<Bullet>& bullets, Vec2 spawn_pos, Vec2 direction, Team team);

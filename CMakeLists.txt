@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-add_executable(GameAI main.cpp arena.cpp utils.cpp Enemy.cpp player.cpp pathfinding.cpp entity.cpp bullet.cpp)
+add_executable(GameAI main.cpp arena.cpp utils.cpp Enemy.cpp player.cpp pathfinding.cpp entity.cpp bullet.cpp fsm.cpp)
 if(MINGW)
     target_link_options(GameAI PRIVATE -static)
 endif()

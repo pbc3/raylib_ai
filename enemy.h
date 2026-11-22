@@ -9,12 +9,16 @@
 #include "fsm.h"
 #include "player.h"
 #include <numbers>
+#include "bullet.h"
+
 struct Enemy;
 
 struct Perceptions{
   Vec2 last_seen_player;
   bool spotted_player;
+  bool in_range;
   float view_angle_rads = 1.5708f; // 90* in radians
+  float max_distance = 250.f;
   void update(Enemy* agent, Arena& arena, Player& player);
 };
 
@@ -31,12 +35,15 @@ struct Enemy : public Entity{
   Perceptions perceptions;
   Vec2 forward;
   Vec2 player_pos;
+	std::vector<Vec2> patrol_targets = {{150,300},{200,300},{400,200}};
+  int current_patrol_idx;
 
+  void update(Arena& arena, Player& player, float dt, std::vector<Bullet>& bullets);
   void follow_path(float dt, Arena& arena);
-  void update(float dt);
   void replan(Arena& arena, Vec2 player_pos);
   float& take_damage(float dmg);
+  void engage_player(Arena& arena, float dt, Player& player, std::vector<Bullet>& bullets);
+  void patrol(Arena& arena, float dt);
 };
-
 
 
