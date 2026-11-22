@@ -19,17 +19,15 @@ struct Perceptions{
 };
 
 struct Enemy : public Entity{
-  // Vec2 world_pos;
+  
   Vec2 velocity;
   float threshold = .2f;
-  // float health = 100;
-  // float size;
   int goal_tile = -1;
   std::chrono::steady_clock::time_point last_shot_at;
   std::vector<Vec2> cur_path;
   int cur_waypoint = 0;
 
-  // StateMachine& fsm;
+  EnemyStateMachine fsm;
   Perceptions perceptions;
   Vec2 forward;
   Vec2 player_pos;

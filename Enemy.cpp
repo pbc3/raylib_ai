@@ -1,7 +1,12 @@
 #include "enemy.h"
 #include "arena.h"
 
-
+void Enemy::update(Arena& arena, Player& player, float dt){
+    // sense
+    perceptions.update(this, arena,player);
+    // think & act
+    fsm.update(*this,dt);
+}
 void Enemy::replan(Arena& arena, Vec2 goal_pos){
     if(goal_tile != arena.vec2_to_tile(goal_pos)){
         auto new_path = astar(arena, arena.vec2_to_tile(world_pos),
@@ -98,7 +103,6 @@ void Enemy::follow_path(float dt, Arena& arena){
 
     if(dot < half_angle){
       //not inside vision cone, return
-      spotted_player = false;
       return; 
     }
     // 3 - check whether agent can see player directly, no walls in between
@@ -115,9 +119,105 @@ void Enemy::follow_path(float dt, Arena& arena){
         return;
       }
     }
-    spotted_player = true;
+   spotted_player = true;
    last_seen_player = player.world_pos;
   };
+
+  enum class EnemyState{
+	PATROL, CHASE, ENGAGE
+};
+
+struct EnemyStateMachine {
+
+	EnemyState state = EnemyState::CHASE;
+	// virtual ~StateMachine() = default;
+	std::vector<int> patrol_locations = {156,137,203};
+	void update(Enemy& agent,float dt, Arena& arena){
+
+		switch(state){
+			case EnemyState::PATROL:
+      // check perceptions for transitions
+      if(agent.perceptions.spotted_player){
+        change_state(agent,EnemyState::CHASE);
+        return;
+      }
+      //else
+        agent.follow_path(dt,arena);
+			break;
+
+			case EnemyState::CHASE:
+        // check perceptions for transitions
+        if(agent.perceptions.in_range){
+          change_state(agent,EnemyState::ENGAGE);
+          return;
+        }
+        if(agent.perceptions.)
+       //else
+
+			break;
+
+			case EnemyState::ENGAGE:
+      // check perceptions for transitions
+
+      //else
+
+			break;
+		}
+	}
+
+	void change_state(Arena& arena, Enemy& agent, EnemyState next_state) {
+		on_exit();
+		state = next_state;
+		on_enter();
+	}
+
+  void engage_player(Arena& arena, Enemy& agent, float dt, Player& player){
+      auto cur_time = std::chrono::steady_clock::now();
+      auto cooldown_interval = std::chrono::seconds(3);
+      if(cur_time - agent.last_shot_at >= cooldown_interval){
+        // shoot again after cooldown
+        Vec2 direction = player.world_pos - agent.world_pos;
+        direction.normalise();
+        arena.spawn_bullet(agent.world_pos,direction,Team::ENEMY);
+        agent.last_shot_at = cur_time;
+      }}
+
+  }
+	void on_enter(Enemy& agent, Arena& arena){
+		// enter new state
+			switch(state){
+			case EnemyState::PATROL:
+			// enter
+			break;
+
+			case EnemyState::CHASE:
+			// enter
+      agent.replan(arena,agent.perceptions.last_seen_player);
+			break;
+
+			case EnemyState::ENGAGE:
+			// enter
+			break;
+		}
+	};
+	void on_exit(Enemy& agent){
+		// exit cur state
+			switch(state){
+			case EnemyState::PATROL:
+			// exit
+			break;
+
+			case EnemyState::CHASE:
+			// exit
+			break;
+
+			case EnemyState::ENGAGE:
+			// exit
+			break;
+		}
+	}
+};
+
 
   /*
   Enemy A State Machine
@@ -142,13 +242,13 @@ void Enemy::follow_path(float dt, Arena& arena){
 
 // struct EnemyAStateMachine : public StateMachine{
 //   Enemy* agent;
-// }
+// };
 
 // struct PatrolState : public State{
 //   virtual void update(StateMachine& controller) override{
 //     // check if spotted
 
-
+//     if()
 
 //     // if no transition, continue patrol
 //   }

@@ -33,6 +33,7 @@ bool out_of_bounds(Arena& arena, Vec2 requested_pos){
 };
 
 
+
 Arena::Arena(const std::string &csv_path) {
   auto res = parse_csv(csv_path);
   if (!res.has_value()) {

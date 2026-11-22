@@ -27,6 +27,46 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 std::vector<Color> colours{WHITE,RED};
 
 const float BULLET_DAMAGE = 20.f;
+bool bullet_hit(Bullet& bullet, Entity& entity){
+    Rectangle r;
+    float half_size = entity.size / 2;
+    r.x = entity.world_pos.x - half_size;
+    r.y = entity.world_pos.y - half_size;
+    r.width = half_size * 2;
+    r.height = half_size * 2;
+  return CheckCollisionCircleRec(*reinterpret_cast<Vector2*>(&bullet.world_pos),bullet.size,r);
+};
+
+Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet){
+  // loop over each enemy, and then the player. see if the bullet collides
+  // check enemies
+  if(bullet.team == Team::PLAYER){
+    for(Enemy& enemy : enemies){
+      if(bullet_hit(bullet,enemy)){
+        bullet.expired = true;
+        return &enemy;
+      }
+    }
+  }
+    else{
+      // check whether bullet hit player
+      if(bullet_hit(bullet,player)){
+        bullet.expired = true;
+        return &player;
+      }
+    }
+    return nullptr;
+}
+
+void spawn_bullet(std::vector<Bullet>& bullets, Vec2 spawn_pos, Vec2 direction, Team team){
+  Bullet b;
+  b.world_pos = spawn_pos;
+  b.velocity = direction * b.bullet_speed;
+  b.expired = false;
+  b.team = team;
+  b.size = 5.0f;
+  bullets.push_back(b);
+}
 
   // todo - factor these bools into a single enum, with helper functions like
   // is_move_up etc
@@ -124,46 +164,46 @@ void draw_grid(Arena &arena) {
 
 
 
-bool bullet_hit(Bullet& bullet, Entity& entity){
-    Rectangle r;
-    float half_size = entity.size / 2;
-    r.x = entity.world_pos.x - half_size;
-    r.y = entity.world_pos.y - half_size;
-    r.width = half_size * 2;
-    r.height = half_size * 2;
-  return CheckCollisionCircleRec(*reinterpret_cast<Vector2*>(&bullet.world_pos),bullet.size,r);
-};
+// bool bullet_hit(Bullet& bullet, Entity& entity){
+//     Rectangle r;
+//     float half_size = entity.size / 2;
+//     r.x = entity.world_pos.x - half_size;
+//     r.y = entity.world_pos.y - half_size;
+//     r.width = half_size * 2;
+//     r.height = half_size * 2;
+//   return CheckCollisionCircleRec(*reinterpret_cast<Vector2*>(&bullet.world_pos),bullet.size,r);
+// };
 
-Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet){
-  // loop over each enemy, and then the player. see if the bullet collides
-  // check enemies
-  if(bullet.team == Team::PLAYER){
-    for(Enemy& enemy : enemies){
-      if(bullet_hit(bullet,enemy)){
-        bullet.expired = true;
-        return &enemy;
-      }
-    }
-  }
-    else{
-      // check whether bullet hit player
-      if(bullet_hit(bullet,player)){
-        bullet.expired = true;
-        return &player;
-      }
-    }
-    return nullptr;
-}
+// Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet){
+//   // loop over each enemy, and then the player. see if the bullet collides
+//   // check enemies
+//   if(bullet.team == Team::PLAYER){
+//     for(Enemy& enemy : enemies){
+//       if(bullet_hit(bullet,enemy)){
+//         bullet.expired = true;
+//         return &enemy;
+//       }
+//     }
+//   }
+//     else{
+//       // check whether bullet hit player
+//       if(bullet_hit(bullet,player)){
+//         bullet.expired = true;
+//         return &player;
+//       }
+//     }
+//     return nullptr;
+// }
 
-void spawn_bullet(std::vector<Bullet>& bullets, Vec2 spawn_pos, Vec2 direction, Team team){
-  Bullet b;
-  b.world_pos = spawn_pos;
-  b.velocity = direction * b.bullet_speed;
-  b.expired = false;
-  b.team = team;
-  b.size = 5.0f;
-  bullets.push_back(b);
-}
+// void spawn_bullet(std::vector<Bullet>& bullets, Vec2 spawn_pos, Vec2 direction, Team team){
+//   Bullet b;
+//   b.world_pos = spawn_pos;
+//   b.velocity = direction * b.bullet_speed;
+//   b.expired = false;
+//   b.team = team;
+//   b.size = 5.0f;
+//   bullets.push_back(b);
+// }
 
 
 
@@ -234,17 +274,17 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
         spawn_bullet(bullets, player.world_pos, input.mouse_dir, Team::PLAYER);
       }
 
-      auto cur_time = std::chrono::steady_clock::now();
-      auto cooldown_interval = std::chrono::seconds(3);
-      if(!enemies.empty()){
-      if(cur_time - enemies[0].last_shot_at >= cooldown_interval){
-        // shoot again after cooldown
-        Vec2 direction = player.world_pos - enemies[0].world_pos;
-        direction.normalise();
+      // auto cur_time = std::chrono::steady_clock::now();
+      // auto cooldown_interval = std::chrono::seconds(3);
+      // if(!enemies.empty()){
+      // if(cur_time - enemies[0].last_shot_at >= cooldown_interval){
+      //   // shoot again after cooldown
+      //   Vec2 direction = player.world_pos - enemies[0].world_pos;
+      //   direction.normalise();
      
-        spawn_bullet(bullets,enemies[0].world_pos,direction,Team::ENEMY);
-        enemies[0].last_shot_at = cur_time;
-      }}
+      //   spawn_bullet(bullets,enemies[0].world_pos,direction,Team::ENEMY);
+      //   enemies[0].last_shot_at = cur_time;
+      // }}
 
 
 

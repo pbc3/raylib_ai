@@ -4,6 +4,7 @@
 #include <array>
 #include <exception>
 #include <stdexcept>
+#include "entity.h"
 
 constexpr int TILE_SIZE = 32;
 
@@ -30,5 +31,16 @@ struct Arena {
   Vec2 tile_to_world(int tile);
 };
 
+
+
+const float BULLET_DAMAGE = 20.f;
+
 bool out_of_bounds(Arena& arena, Vec2 requested_pos);
 bool valid_movement(Arena& arena, Vec2 requested_pos, float size);
+
+// bool bullet_hit(Bullet& bullet, Entity& entity);
+// Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet);
+// void spawn_bullet(std::vector<Bullet>& bullets, Vec2 spawn_pos, Vec2 direction, Team team);
+
+
+
