@@ -24,10 +24,10 @@ struct Enemy : public Entity{
   float threshold = .2f;
   // float health = 100;
   // float size;
-  int goal_tile;
+  int goal_tile = -1;
   std::chrono::steady_clock::time_point last_shot_at;
   std::vector<Vec2> cur_path;
-  int cur_waypoint;
+  int cur_waypoint = 0;
 
   // StateMachine& fsm;
   Perceptions perceptions;

@@ -8,14 +8,15 @@ void Enemy::replan(Arena& arena, Vec2 goal_pos){
         arena.vec2_to_tile(goal_pos));
         std::vector<Vec2> wp;
         if(!new_path.empty()){
-        for(int p : new_path){
-              wp.push_back(arena.tile_to_world(p)); 
+          for(int p : new_path){
+                wp.push_back(arena.tile_to_world(p)); 
+           }
+          cur_path = wp;
+          goal_tile = arena.vec2_to_tile(goal_pos);
+          cur_waypoint=0;
+          return;
         }
-        cur_path = wp;
-        goal_tile = arena.vec2_to_tile(goal_pos);
-        cur_waypoint=0;
-        return;
-        }
+        cur_waypoint = 0;
         cur_path = {};
       }
 }
@@ -53,7 +54,7 @@ void Enemy::follow_path(float dt, Arena& arena){
     
    Vec2 new_mov =  world_pos + dir *movement_step;
    if(!valid_movement(arena,new_mov,size)){
-        // replan(arena,goal_pos);
+        replan(arena,perceptions.last_seen_player);
         return;
    }
     world_pos = new_mov;
@@ -115,9 +116,6 @@ void Enemy::follow_path(float dt, Arena& arena){
       }
     }
     spotted_player = true;
-    if(at != last_seen_player){
-      agent->replan(arena,at);
-    }
    last_seen_player = player.world_pos;
   };
 

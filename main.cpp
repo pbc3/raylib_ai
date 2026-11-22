@@ -348,7 +348,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
     camera.offset = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
     bool draw_paths = true;
     while (!WindowShouldClose()) {
-      if(IsKeyDown(KEY_R)) {
+      if(IsKeyPressed(KEY_R)) {
        arena.grid[19][15] = !arena.grid[19][15];
       }
       float dt = GetFrameTime();
@@ -366,7 +366,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
       Vec2 player_top_left = player.world_pos - Vec2{player.size / 2, player.size / 2};
        DrawRectangleV(*reinterpret_cast<Vector2 *>(&player_top_left),{player.size, player.size}, BLUE);
       for(int i = 0; i < enemies.size(); i++){
-        auto enemy = enemies[i];
+        auto& enemy = enemies[i];
         Vec2 enemy_top_left = enemy.world_pos - Vec2{enemy.size / 2, enemy.size / 2};
         DrawRectangleV(*reinterpret_cast<Vector2 *>(&enemy_top_left),{enemy.size, enemy.size}, colours[i]);
         DrawText(TextFormat("%i", (int) enemy.health), enemy.world_pos.x, enemy.world_pos.y, 20, GREEN);
