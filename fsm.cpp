@@ -14,7 +14,7 @@ void EnemyStateMachine::update(Enemy& agent, float dt, Arena& arena, Player& pla
             }
 
             //else
-            agent.forward = {-agent.forward.y, agent.forward.x};
+            // agent.forward = {-agent.forward.y, agent.forward.x};
             // agent.patrol(dt,arena);
             // agent.follow_path(dt,arena);
             agent.patrol(arena,dt);
@@ -34,6 +34,7 @@ void EnemyStateMachine::update(Enemy& agent, float dt, Arena& arena, Player& pla
                 return;
             }
             //else
+            agent.follow_path(dt,arena);
             break;
 
         case EnemyState::ENGAGE:
@@ -45,7 +46,7 @@ void EnemyStateMachine::update(Enemy& agent, float dt, Arena& arena, Player& pla
             }
 
             //else
-            agent.engage_player(arena, dt, player, bullets);
+            agent.engage_pl ayer(arena, dt, player, bullets);
             break;
     }
 };
@@ -66,6 +67,7 @@ void EnemyStateMachine::on_enter(Enemy& agent, Arena& arena){
 			break;
 			case EnemyState::ENGAGE:
 			// enter
+          
 			break;
 		}
 };

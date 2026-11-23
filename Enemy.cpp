@@ -155,11 +155,12 @@ void Enemy::follow_path(float dt, Arena& arena){
 
 void Enemy::engage_player(Arena& arena, float dt, Player& player, std::vector<Bullet>& bullets){
       auto cur_time = std::chrono::steady_clock::now();
-      auto cooldown_interval = std::chrono::seconds(3);
+      auto cooldown_interval = std::chrono::milliseconds(500);
       if(cur_time - last_shot_at >= cooldown_interval){
         // shoot again after cooldown
         Vec2 direction = player.world_pos -world_pos;
         direction.normalise();
+        forward = direction; // this is for debug, show the aim line / forward line
         spawn_bullet(bullets,world_pos,direction,Team::ENEMY);
         last_shot_at = cur_time;
       }

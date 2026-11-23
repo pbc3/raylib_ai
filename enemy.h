@@ -18,7 +18,7 @@ struct Perceptions{
   bool spotted_player;
   bool in_range;
   float view_angle_rads = 1.5708f; // 90* in radians
-  float max_distance = 250.f;
+  float max_distance = 350.f;
   void update(Enemy* agent, Arena& arena, Player& player);
 };
 

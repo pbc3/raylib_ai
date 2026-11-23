@@ -15,8 +15,8 @@
 #include "bullet.h"
 #include "pathfinding.h"
 
-constexpr int SCREEN_WIDTH = 1280;
-constexpr int SCREEN_HEIGHT = 720;
+constexpr int SCREEN_WIDTH = 1920;
+constexpr int SCREEN_HEIGHT = 1080;
 constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE;   // screen x / tile
 constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
 constexpr Color GRID_COLOUR = {48, 59, 72, 255};
@@ -249,17 +249,17 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
         for(Enemy& enemy : enemies){
           enemy.update(arena,player,dt,bullets);
         }
-      for(Enemy& enemy : enemies){
-        enemy.perceptions.update(&enemy,arena,player);
-        if(enemy.perceptions.spotted_player){
-          enemy.replan(arena,enemy.perceptions.last_seen_player);
-        }
-        else{
-          // rotate.. do this in patrol, after the transitions checks, before? moving to a location. 
-          enemy.forward = {-enemy.forward.y,enemy.forward.x};
-        }
-        enemy.follow_path(dt,arena);
-      }
+      // for(Enemy& enemy : enemies){
+      //   enemy.perceptions.update(&enemy,arena,player);
+      //   if(enemy.perceptions.spotted_player){
+      //     enemy.replan(arena,enemy.perceptions.last_seen_player);
+      //   }
+      //   else{
+      //     // rotate.. do this in patrol, after the transitions checks, before? moving to a location. 
+      //     enemy.forward = {-enemy.forward.y,enemy.forward.x};
+      //   }
+      //   enemy.follow_path(dt,arena);
+      // }
 
 
       {
@@ -341,7 +341,7 @@ DrawLineV(
     SetTargetFPS(120);
 
     // get path realtive to build-dir
-    const auto csv = std::filesystem::path(GetApplicationDirectory()) / "assets" / "arena.csv";
+    const auto csv = std::filesystem::path(GetApplicationDirectory()) / "assets" / "map_binary.csv";
     // std::string csv = R"(C:\dev\gai_cwk\assets\arena.csv)";
     // csv = csvv.string();
     // auto cs = ".assets\arena.csv";
