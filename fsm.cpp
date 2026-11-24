@@ -5,50 +5,64 @@ void EnemyStateMachine::update(Enemy& agent, float dt, Arena& arena, Player& pla
 {
     switch (state)
     {
+        // PATROL -> SPOTTED? - > CHASE
+        // CHASE - > IN RANGE ? -> ENGAGE
+        // CHASE -> FOLLOW PATH -> ARRIVED AT LAST SEEN -> NOONE THERE -> PATROL
+        // ENGAGE -> OUT OF RANGE? - > CHASE
         case EnemyState::PATROL:
             // check perceptions for transitions
             if (agent.perceptions.spotted_player)
             {
+                // if(agent.perceptions.in_range){
+                //     change_state(agent, arena, EnemyState::ENGAGE);
+                // }
                 change_state(agent, arena, EnemyState::CHASE);
                 return;
             }
-
-            //else
-            // agent.forward = {-agent.forward.y, agent.forward.x};
-            // agent.patrol(dt,arena);
-            // agent.follow_path(dt,arena);
+            
+            //else - patrol. all patrol logic is contained in this func
             agent.patrol(arena,dt);
             break;
 
-        case EnemyState::CHASE:
+        case EnemyState::CHASE:{
             // check perceptions for transitions
-            if (agent.perceptions.in_range)
+        if (agent.perceptions.in_range && !agent.perceptions.obstructed_los)
             {
                 change_state(agent, arena, EnemyState::ENGAGE);
                 return;
             }
+            if(agent.perceptions.spotted_player){
 
-            if(!agent.perceptions.spotted_player && agent.goal_tile!=-1 && 
-                agent.goal_tile == arena.vec2_to_tile(agent.world_pos)){
-                change_state(agent,arena,EnemyState::PATROL);
-                return;
+                Vec2 direction = agent.perceptions.last_seen_player - agent.world_pos;
+
+                direction.normalise();
+                agent.forward = direction;
+
+                int tile = arena.vec2_to_tile(agent.perceptions.last_seen_player);
+
+                // if(tile != agent.goal_tile){
+                //     agent.replan(arena,agent.perceptions.last_seen_player);
+                // }
             }
             //else
-            agent.follow_path(dt,arena);
+           MovementState chase_result =  agent.follow_path(dt,arena);
+           if(chase_result == MovementState::ARRIVED && !agent.perceptions.spotted_player){
+                change_state(agent,arena,EnemyState::PATROL);
+           }
             break;
+        }
 
         case EnemyState::ENGAGE:
             // check perceptions for transitions
-            if (!agent.perceptions.in_range)
+            if (!agent.perceptions.in_range || agent.perceptions.obstructed_los)
             {
                 change_state(agent, arena, EnemyState::CHASE);
                 return;
             }
-
-            //else
-            agent.engage_pl ayer(arena, dt, player, bullets);
-            break;
+            agent.engage_player(arena, dt, player, bullets);
+            break;  
     }
+
 };
 
 
@@ -57,7 +71,7 @@ void EnemyStateMachine::on_enter(Enemy& agent, Arena& arena){
 			switch(state){
 			case EnemyState::PATROL:
 			// enter
-            agent.velocity = {100,100};
+            agent.velocity = {150,150};
             agent.replan(arena,agent.patrol_targets[agent.current_patrol_idx]);
 			break;
 			case EnemyState::CHASE:

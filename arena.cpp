@@ -33,6 +33,13 @@ bool out_of_bounds(Arena& arena, Vec2 requested_pos){
 };
 
 
+std::vector<Vec2> tile_path_to_vec2(Arena& arena, std::vector<int>& tile_path){
+      std::vector<Vec2> world_path;
+      for(int p : tile_path){
+       world_path.push_back(arena.tile_to_world(p));
+      }
+      return world_path;
+}
 
 Arena::Arena(const std::string &csv_path) {
   auto res = parse_csv(csv_path);

@@ -47,6 +47,7 @@ std::vector<std::pair<int, int>> neighbours(Arena& arena, int tile) {
   return neighbour_tiles;
 }
 
+
 // here - im working with flattened indices, even though my array is 2D. 
 std::vector<int> astar(Arena &arena, int start_node, int target_node) {
   std::priority_queue<std::pair<int, int>,              // type of entry

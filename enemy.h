@@ -10,16 +10,23 @@
 #include "player.h"
 #include <numbers>
 #include "bullet.h"
+#include <random>
+
 
 struct Enemy;
 
 struct Perceptions{
   Vec2 last_seen_player;
   bool spotted_player;
+  bool obstructed_los;
   bool in_range;
   float view_angle_rads = 1.5708f; // 90* in radians
   float max_distance = 350.f;
   void update(Enemy* agent, Arena& arena, Player& player);
+};
+
+enum class MovementState{
+  MOVING,BLOCKED,ARRIVED,NO_PATH
 };
 
 struct Enemy : public Entity{
@@ -34,16 +41,19 @@ struct Enemy : public Entity{
   EnemyStateMachine fsm;
   Perceptions perceptions;
   Vec2 forward;
+  Vec2 move_direction;
   Vec2 player_pos;
-	std::vector<Vec2> patrol_targets = {{150,300},{200,300},{400,200}};
+	std::vector<Vec2> patrol_targets;
   int current_patrol_idx;
+  Vec2 current_goal_pos;
 
   void update(Arena& arena, Player& player, float dt, std::vector<Bullet>& bullets);
-  void follow_path(float dt, Arena& arena);
+  MovementState follow_path(float dt, Arena& arena);
   void replan(Arena& arena, Vec2 player_pos);
   float& take_damage(float dmg);
   void engage_player(Arena& arena, float dt, Player& player, std::vector<Bullet>& bullets);
   void patrol(Arena& arena, float dt);
+  void setup_patrol_paths(Arena& arena);
 };
 
 

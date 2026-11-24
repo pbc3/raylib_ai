@@ -31,6 +31,7 @@ struct Arena {
   Vec2 tile_to_world(int tile);
 };
 
+std::vector<Vec2> tile_path_to_vec2(Arena& arena, std::vector<int>& tile_path);
 
 
 const float BULLET_DAMAGE = 20.f;

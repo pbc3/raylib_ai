@@ -61,23 +61,20 @@ Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet){
 
   // todo - factor these bools into a single enum, with helper functions like
   // is_move_up etc
-enum class MovementState : uint8_t {
-  move_up = 0, move_down, move_left, move_right
-};
+
 
 struct input_state {
   bool move_up;
   bool move_down;
   bool move_left;
   bool move_right;
-  MovementState movement_state;
   bool firing;
   Vec2 mouse_dir;
 };
 
 
 input_state handle_input(Camera2D camera, Player &player) {
-  input_state input{false, false, false, false,MovementState::move_down, false, {0, 0}};
+  input_state input{false, false, false, false, false, {0, 0}};
   if (IsKeyDown(KEY_W)) {
     input.move_up = true;
   }
@@ -352,7 +349,7 @@ DrawLineV(
 
     //gameplay setup
     Player player{};
-    player.world_pos = {100,100};
+    player.world_pos = {550,150};
     player.velocity = {550, 550};
     player.size = 25.f;
 
@@ -367,6 +364,7 @@ DrawLineV(
     enemy.health = 100;
     enemy.perceptions.spotted_player = false;
     enemy.forward = {-1,0.f};
+
     Enemy enemy1{};
     enemy1.world_pos = {657,400};
     enemy1.velocity = {300,300};
@@ -375,10 +373,14 @@ DrawLineV(
     enemy1.dead = false;
     enemy1.perceptions.spotted_player = false;
     enemy1.forward = {-1,0.f};
+    enemy.velocity = {500,500};
+
     // setup initial paths
-    
+    enemy1.setup_patrol_paths(arena);
+    enemy.setup_patrol_paths(arena);
+
     enemies.push_back(enemy);
-    enemies.push_back(enemy1);
+    // enemies.push_back(enemy1);
 
     // int player_tile = arena.vec2_to_tile(player.world_pos);
     // for(Enemy& enemy_agent : enemies){
@@ -467,7 +469,7 @@ DrawLineV(
     EndDrawing();
     DrawText(TextFormat("Enemy1 State:: %i", enemies[0].fsm.state), 10, 10, 20, GREEN);
     // DrawText(TextFormat("FPS: %i", GetFPS()), 10, 10, 20, GREEN);
-    // DrawText(TextFormat("Health: %i", (int) player.health), 160, 10, 20, GREEN);
+    DrawText(TextFormat("Health: %i", (int) player.health), 360, 10, 20, GREEN);
   }
 
   CloseWindow();
