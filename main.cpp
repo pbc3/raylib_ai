@@ -378,7 +378,7 @@ DrawLineV(
     // setup initial paths
     enemy1.setup_patrol_paths(arena);
     enemy.setup_patrol_paths(arena);
-
+enemy.fsm.on_enter(enemy, arena);
     enemies.push_back(enemy);
     // enemies.push_back(enemy1);
 
@@ -467,9 +467,24 @@ DrawLineV(
 
     EndMode2D();
     EndDrawing();
-    DrawText(TextFormat("Enemy1 State:: %i", enemies[0].fsm.state), 10, 10, 20, GREEN);
+    if (!enemies.empty()) {
+    const Enemy& e = enemies[0];
+    DrawText(
+        TextFormat(
+            "STATE: %d | GOAL: %d | WP: %d/%d | SEEN: %d | RANGE: %d",
+            static_cast<int>(e.fsm.state),
+            e.goal_tile,
+            e.cur_waypoint,
+            static_cast<int>(e.cur_path.size()),
+            e.perceptions.spotted_player,
+            e.perceptions.in_range
+        ),
+        10, 10, 20, GREEN
+    );
+
+}
     // DrawText(TextFormat("FPS: %i", GetFPS()), 10, 10, 20, GREEN);
-    DrawText(TextFormat("Health: %i", (int) player.health), 360, 10, 20, GREEN);
+    // DrawText(TextFormat("Health: %i", (int) player.health), 360, 10, 20, GREEN);
   }
 
   CloseWindow();
