@@ -14,10 +14,12 @@ struct Player;
 struct Bullet;
 
 enum class EnemyState{
-	PATROL, CHASE, ENGAGE
+	PATROL, CHASE, ENGAGE,TAKE_COVER, HEAL
 };
 
 struct EnemyStateMachine {
+	float cover_threshold = 40.f;
+	float heal_timer = 0.f;
 	EnemyState state = EnemyState::PATROL;
 	void update(Enemy& agent, float dt, Arena& arena, Player& player, std::vector<Bullet>& bullets);
 	void on_exit(Enemy& agent);

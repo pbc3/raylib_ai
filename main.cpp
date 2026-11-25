@@ -23,7 +23,10 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 // tile centring, possibly needed.
 // constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
 // constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
-
+const char* PATROL_STRING = "PATROL";
+const char* CHASE_STRING = "CHASE";
+const char* ENGAGE_STRING = "ENGAGE";
+  
 std::vector<Color> colours{WHITE,RED};
 
 bool bullet_hit(Bullet& bullet, Entity& entity){
@@ -333,6 +336,20 @@ DrawLineV(
  DrawTriangleStrip(points.data(), (int)points.size(), Fade(YELLOW, 0.3f));
 }
 
+const char* get_state(EnemyState state){
+  switch(state){
+    case EnemyState::PATROL: {
+      return PATROL_STRING;
+    }
+    case EnemyState::CHASE: {
+      return CHASE_STRING;
+    }
+    case EnemyState::ENGAGE: {
+      return ENGAGE_STRING;
+    }
+  }
+};
+
   int main() {
 
     SetTargetFPS(120);
@@ -428,9 +445,9 @@ enemy.fsm.on_enter(enemy, arena);
         auto& enemy = enemies[i];
         Vec2 enemy_top_left = enemy.world_pos - Vec2{enemy.size / 2, enemy.size / 2};
         DrawRectangleV(*reinterpret_cast<Vector2 *>(&enemy_top_left),{enemy.size, enemy.size}, colours[i]);
-        DrawText(TextFormat("%i", (int) enemy.health), enemy.world_pos.x, enemy.world_pos.y, 20, GREEN);
+        DrawText(TextFormat("%i", (int) enemy.health), enemy.world_pos.x+enemy.size/2, enemy.world_pos.y-50, 40, GREEN);
+        DrawText(TextFormat("%s", get_state(enemy.fsm.state)), enemy.world_pos.x+enemy.size/2, enemy.world_pos.y-10, 40, GREEN);
       }
-
       DrawRectangleLines(player_top_left.x, player_top_left.y, player.size,player.size, RAYWHITE);
 
       //Draw Aim Triangle
@@ -475,7 +492,7 @@ enemy.fsm.on_enter(enemy, arena);
             static_cast<int>(e.fsm.state),
             e.goal_tile,
             e.cur_waypoint,
-            static_cast<int>(e.cur_path.size()),
+              static_cast<int>(e.cur_path.size()),
             e.perceptions.spotted_player,
             e.perceptions.in_range
         ),
