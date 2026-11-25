@@ -5,8 +5,10 @@
 #include <exception>
 #include <stdexcept>
 #include "entity.h"
+#include <random>
 
 constexpr int TILE_SIZE = 32;
+
 
 struct Arena {
   int cols;
@@ -32,7 +34,6 @@ struct Arena {
 };
 
 std::vector<Vec2> tile_path_to_vec2(Arena& arena, std::vector<int>& tile_path);
-
 
 const float BULLET_DAMAGE = 20.f;
 

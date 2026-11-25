@@ -7,7 +7,10 @@ void Enemy::update(Arena& arena, Player& player, float dt, std::vector<Bullet>& 
     // think & act
     fsm.update(*this,dt,arena,player,bullets);
 }
+
 void Enemy::replan(Arena& arena, Vec2 goal_pos){
+
+
       current_goal_pos = goal_pos;
  
       int tile = arena.vec2_to_tile(current_goal_pos);

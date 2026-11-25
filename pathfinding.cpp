@@ -30,7 +30,7 @@ std::vector<std::pair<int, int>> neighbours(Arena& arena, int tile) {
   std::vector<std::pair<int, int>> neighbour_tiles;
 
   auto [row,col] = arena.tile_to_row_col(tile);
-
+  // update cost based on ter1in type
   if(!arena.isWall(row+1,col)){
     neighbour_tiles.push_back({1,arena.flatten(row+1,col)});
   }
@@ -50,12 +50,7 @@ std::vector<std::pair<int, int>> neighbours(Arena& arena, int tile) {
 
 // here - im working with flattened indices, even though my array is 2D. 
 std::vector<int> astar(Arena &arena, int start_node, int target_node) {
-  std::priority_queue<std::pair<int, int>,              // type of entry
-                      std::vector<std::pair<int, int>>, // container storing the
-                                                        // entries
-                      std::greater<std::pair<int, int>> // min heap
-                      >
-      fringe;
+  std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> fringe;
 
   std::vector<int> parents(arena.rows * arena.cols, -1);
   std::unordered_map<int, int> cost_so_far;
@@ -87,11 +82,65 @@ std::vector<int> astar(Arena &arena, int start_node, int target_node) {
 			if (it == cost_so_far.end() || new_cost < it->second) {
         cost_so_far[candidate] = new_cost;
         parents[candidate] = node;
-        int new_priority = new_cost + heuristic(candidate, target_node, arena.cols); // h(n)
+        int new_priority = new_cost + heuristic(candidate, target_node, arena.cols); // total cost = g(n) + h(n)
         fringe.push({new_priority, candidate});
 			}
     }
   }
 
+  return {};
+}
+
+std::vector<int> neighbours_unweighted(Arena& arena, int tile) {
+  // octile..?
+  // diagonal cost = 1.414
+  // cardinal cost = 1
+ std::vector<int> neighbour_tiles;
+
+  auto [row,col] = arena.tile_to_row_col(tile);
+
+  if(!arena.isWall(row+1,col)){
+    neighbour_tiles.push_back({arena.flatten(row+1,col)});
+  }
+  if(!arena.isWall(row-1,col)){
+  neighbour_tiles.push_back({arena.flatten(row-1,col)});
+  }
+  if(!arena.isWall(row,col-1)){
+  neighbour_tiles.push_back({arena.flatten(row,col-1)});
+  }
+  if(!arena.isWall(row,col+1)){
+  neighbour_tiles.push_back({arena.flatten(row,col+1)});
+  }
+
+  return neighbour_tiles;
+}
+
+
+std::vector<int> BFS(Arena& arena, int start_node, int target_node){
+  std::queue<int> frontier;
+  std::vector<int> parents(arena.cols * arena.rows, -1);
+  std::vector<int> visited(arena.cols * arena.rows, 0);
+  visited[start_node] = 1;
+  parents[start_node] = -1;
+  frontier.push(start_node);
+
+  while(!frontier.empty()){
+    int node = frontier.front(); frontier.pop();
+
+    if(node == target_node){
+      return build_path(parents, node);
+    }
+    for(int neighbour : neighbours_unweighted(arena, node)){
+      auto [row, col] = arena.tile_to_row_col(neighbour);
+      if(arena.isWall(row,col)){
+        continue;
+      } 
+        if(!visited[neighbour]){
+          visited[neighbour] = true;
+          frontier.push(neighbour);
+          parents[neighbour] = node;
+        }
+    }
+  }
   return {};
 }

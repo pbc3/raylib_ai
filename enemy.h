@@ -37,6 +37,7 @@ struct Enemy : public Entity{
   std::chrono::steady_clock::time_point last_shot_at;
   std::vector<Vec2> cur_path;
   int cur_waypoint = 0;
+  float replan_timer;
 
   EnemyStateMachine fsm;
   Perceptions perceptions;

@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <filesystem>
 
+#include "artefacts.h"
 #include "arena.h"
 #include "enemy.h"
 #include "player.h"
@@ -26,6 +27,8 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 const char* PATROL_STRING = "PATROL";
 const char* CHASE_STRING = "CHASE";
 const char* ENGAGE_STRING = "ENGAGE";
+const char* COVER_STRING = "COVER";
+const char* HEAL_STRING = "HEALING";
   
 std::vector<Color> colours{WHITE,RED};
 
@@ -133,6 +136,7 @@ void draw_grid(Arena &arena) {
       if (arena.isWall(i, j)) {
         DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, {100, 125, 150, 255});
       }
+       DrawText(TextFormat("%i", (int) arena.flatten(i,j)), x, y, 3, GREEN);
       // if (arena.grid[i][j] == 1) {
       //	DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, { 100, 125, 150, 255
       //});
@@ -151,6 +155,7 @@ void draw_grid(Arena &arena) {
 
   DrawRectangleLines(0, 0, arena.map_width, arena.map_height,
                     {141, 169, 196, 255});
+
 };
 
 
@@ -347,8 +352,25 @@ const char* get_state(EnemyState state){
     case EnemyState::ENGAGE: {
       return ENGAGE_STRING;
     }
+    case EnemyState::TAKE_COVER:{
+      return COVER_STRING;
+    }
+    case EnemyState::HEAL:{
+      return HEAL_STRING;
+    }
+    default:
+    {
+      return "UNKNOWN";
+    }
   }
 };
+void draw_artefacts(Arena& arena, std::vector<int>& artefact_tiles){
+      for(int artefact_tile : artefact_tiles){
+        Vec2 world_loc = arena.tile_to_world(artefact_tile);
+        DrawCircle(world_loc.x,world_loc.y,3,BLUE);
+      }
+};
+
 
   int main() {
 
@@ -395,22 +417,16 @@ const char* get_state(EnemyState state){
     // setup initial paths
     enemy1.setup_patrol_paths(arena);
     enemy.setup_patrol_paths(arena);
-enemy.fsm.on_enter(enemy, arena);
+    enemy.fsm.on_enter(enemy, arena,player);
     enemies.push_back(enemy);
     // enemies.push_back(enemy1);
 
-    // int player_tile = arena.vec2_to_tile(player.world_pos);
-    // for(Enemy& enemy_agent : enemies){
-    //   int enemy_tile = arena.vec2_to_tile(enemy_agent.world_pos);
-    //   auto path = astar(arena,enemy_tile,player_tile);
-    //   std::vector<Vec2> world_path;
-    //   for(int p : path){
-    //    world_path.push_back(arena.tile_to_world(p));
-    //   }
-    //   enemy_agent.cur_path = world_path;
-    //   enemy_agent.player_tile = player_tile;
-    //   enemy_agent.cur_waypoint = 0;
-    // }
+
+
+    // setup artefacts
+    std::vector<int> artefact_tiles = generate_artefacts(arena,player);
+
+
     auto cur_time = std::chrono::steady_clock::now();
     enemies[0].last_shot_at = cur_time;
 
@@ -438,6 +454,7 @@ enemy.fsm.on_enter(enemy, arena);
       
       //  todo - stop drawing the grid every frame, draw it once into a texture,
       draw_grid(arena);
+      draw_artefacts(arena,artefact_tiles);
       for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, b.size, BLACK);}
       Vec2 player_top_left = player.world_pos - Vec2{player.size / 2, player.size / 2};
        DrawRectangleV(*reinterpret_cast<Vector2 *>(&player_top_left),{player.size, player.size}, BLUE);
