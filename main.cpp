@@ -364,9 +364,9 @@ const char* get_state(EnemyState state){
     }
   }
 };
-void draw_artefacts(Arena& arena, std::vector<int>& artefact_tiles){
-      for(int artefact_tile : artefact_tiles){
-        Vec2 world_loc = arena.tile_to_world(artefact_tile);
+void draw_artefacts(Arena& arena, std::vector<Artefact>& artefact_tiles){
+      for(Artefact artefact_tile : artefact_tiles){
+        Vec2 world_loc = (artefact_tile.world_pos);
         DrawCircle(world_loc.x,world_loc.y,3,BLUE);
       }
 };
@@ -424,7 +424,7 @@ void draw_artefacts(Arena& arena, std::vector<int>& artefact_tiles){
 
 
     // setup artefacts
-    std::vector<int> artefact_tiles = generate_artefacts(arena,player);
+    std::vector<Artefact> artefact_tiles = generate_artefacts(arena,player);
 
 
     auto cur_time = std::chrono::steady_clock::now();

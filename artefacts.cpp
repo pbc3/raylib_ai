@@ -1,6 +1,6 @@
 #include "artefacts.h"
 
-std::vector<int> generate_artefacts(Arena& arena, Player& player){
+std::vector<Artefact> generate_artefacts(Arena& arena, Player& player){
     // return from a vector of tile locations for the artefacts
     // to_do - store random generator inside arena, construct it on creation, and give me a Vec2 random_location function, also rename iswall to is obstacle
     // basic first - just make them reachable from the player, and not a wall
@@ -10,8 +10,7 @@ std::vector<int> generate_artefacts(Arena& arena, Player& player){
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> dist_x(0.f,max_x);
     std::uniform_real_distribution<float> dist_y(0.f,max_y);
-    
-    std::vector<int> locations;
+    std::vector<Artefact> locations;
     while(locations.size() <= 18){
         Vec2 candidate = {dist_x(gen), dist_y(gen)};
         int tile = arena.vec2_to_tile(candidate);
@@ -19,14 +18,18 @@ std::vector<int> generate_artefacts(Arena& arena, Player& player){
         if(arena.isWall(tile)){
             continue;
         }
-
-        // can the player reach it? is this needed? 
+        // accessibility verification
         int player_tile = arena.vec2_to_tile(player.world_pos);
         auto path = astar(arena,player_tile,tile);
         if(path.empty()){
             continue;
         }
-        locations.push_back(tile);
+
+        // TODO - MINIMUM SPACING BETWEEN EXISTING ONES
+        Artefact af;
+        af.collected = false;
+        af.world_pos = candidate;
+        locations.push_back(af);
     }
     return locations;
 }

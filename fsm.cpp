@@ -94,6 +94,9 @@ void EnemyStateMachine::update(Enemy& agent, float dt, Arena& arena, Player& pla
           
             MovementState move_res = agent.follow_path(dt, arena);
             if(move_res == MovementState::ARRIVED){
+                // if(!still_providing_cover(cover_position)){
+                //     find_cover(arena,agent,player); // try again
+                // }
                 change_state(agent,arena,EnemyState::HEAL, player);
             }
             // else - not at cover yet, tick over...
@@ -106,7 +109,7 @@ void EnemyStateMachine::update(Enemy& agent, float dt, Arena& arena, Player& pla
                 change_state(agent, arena, EnemyState::PATROL,player);
                 return;
             }
-            agent.health+=0.1;
+            agent.health += agent.health * dt;
             heal_timer += dt;
             break;
         }

@@ -23,6 +23,7 @@ struct EnemyStateMachine {
 	float cover_threshold = 41.f;
 	float heal_timer = 0.f;
 	float replan_timer = 0.f;
+	float hp_per_sec = 5.0f;
 	EnemyState state = EnemyState::PATROL;
 	void update(Enemy& agent, float dt, Arena& arena, Player& player, std::vector<Bullet>& bullets);
 	void on_exit(Enemy& agent);

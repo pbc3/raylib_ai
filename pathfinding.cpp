@@ -91,6 +91,49 @@ std::vector<int> astar(Arena &arena, int start_node, int target_node) {
   return {};
 }
 
+
+std::vector<int> dijkstra(Arena &arena, int start_node, int target_node) {
+  std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> fringe;
+
+  std::vector<int> parents(arena.rows * arena.cols, -1);
+  std::unordered_map<int, int> cost_so_far;
+
+  fringe.push({0, start_node});
+  parents[start_node] = -1;
+  cost_so_far[start_node] = 0;
+
+  while (!fringe.empty()) {
+    auto [priority, node] = fringe.top();
+    fringe.pop();
+
+    if (priority != cost_so_far[node]) {
+      continue; // there can be >1 pairs with the same node, but different
+                // costs. this confirms its still the best one, else its skipped
+    }
+
+    if (node == target_node) { return build_path(parents, node); }
+
+    for (auto [edge_cost, candidate] : neighbours(arena, node)) {
+      auto [row, col] = arena.tile_to_row_col(candidate);
+      if(arena.isWall(row,col)){
+        continue;
+      } 
+
+			int new_cost = edge_cost + cost_so_far.at(node); // g(n);
+
+			auto it = cost_so_far.find(candidate);
+			if (it == cost_so_far.end() || new_cost < it->second) {
+        cost_so_far[candidate] = new_cost;
+        parents[candidate] = node;
+        int new_priority = new_cost; // total cost = g(n)
+        fringe.push({new_priority, candidate});
+			}
+    }
+  }
+
+  return {};
+}
+
 std::vector<int> neighbours_unweighted(Arena& arena, int tile) {
   // octile..?
   // diagonal cost = 1.414
