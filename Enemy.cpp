@@ -5,7 +5,12 @@ void Enemy::update(Arena& arena, Player& player, float dt, std::vector<Bullet>& 
     // sense
     perceptions.update(this, arena,player);
     // think & act
-    fsm.update(*this,dt,arena,player,bullets);
+    if(type == EnemyType::CHASER){
+    fsm.update_enemy_A(*this,dt,arena,player,bullets);
+    }
+    else{
+      fsm.update_enemy_B(*this,dt,arena,player,bullets);
+    }
 }
 
 void Enemy::replan(Arena& arena, Vec2 goal_pos){
@@ -15,8 +20,14 @@ void Enemy::replan(Arena& arena, Vec2 goal_pos){
  
       int tile = arena.vec2_to_tile(current_goal_pos);
       goal_tile = tile;
-      auto new_path = astar(arena, arena.vec2_to_tile(world_pos),tile);
-
+      std::vector<int> new_path;
+      // chaser uses astar, guard uses dijkstra
+      if(type == EnemyType::CHASER){
+       new_path = astar(arena, arena.vec2_to_tile(world_pos),tile);
+      }
+      else{
+        new_path = dijkstra(arena,arena.vec2_to_tile(world_pos),tile);
+      }
       cur_path.clear(); 
       cur_waypoint = 0;
 
@@ -127,13 +138,20 @@ void Enemy::patrol(Arena& arena, float dt){
 
 
  void Perceptions::update(Enemy* agent, Arena& arena, Player& player){
-    // just vision for now.  
-    // shoot raycasts from enemy position. first will do all sides, then will pick a front facing dir
+
+    // start with negative assumptions
     spotted_player = false;
     in_range = false;
     obstructed_los = true;
+    in_zone = false;
 
-
+    if(agent->type == EnemyType::GUARD){
+      // check whether player is in the guard zone
+      int player_tile = arena.vec2_to_tile(player.world_pos);
+      if(arena.tile_to_zone[player_tile] == agent->guard_zone){
+        in_zone = true;
+      }
+    }
        
 
     // 1 - check whether player is within range
@@ -179,7 +197,7 @@ void Enemy::patrol(Arena& arena, float dt){
     float step = 8.0f;
     for(float i = 0; i < dist; i+=step){
       at = ray.at(i);
-      if(arena.isWall(arena.vec2_to_tile(at))){
+      if(arena.isWall(arena.vec2_to_tile(at)) || arena.isObstacle(arena.vec2_to_tile(at))){
         return;
       }
     }
@@ -208,41 +226,60 @@ void Enemy::engage_player(Arena& arena, float dt, Player& player, std::vector<Bu
     }
 
 
-  /*
-  Enemy A State Machine
-  States:
-  patrol
-  chase last known pos
-  engage if in range
+std::vector<int> neighbours_zones(Arena& arena, int node){
+ std::vector<int> neighbour_tiles;
+  auto [row,col] = arena.tile_to_row_col(node);
   
-  transitions:
-  patrol -> chase if spotted
-  chase -> engage if spotted
-  chase -> new chase position if updated pos, so check if u can see the enemy in chase
-  engage -> patrol if enemy dead
+  if(!arena.isWall(row+1,col)){
+    int neighbour_tile = arena.flatten(row+1,col);
+    if(!arena.isObstacle(neighbour_tile) && !arena.isDoor(neighbour_tile)){
+    neighbour_tiles.push_back(neighbour_tile);
+  }
+  }
+  if(!arena.isWall(row-1,col)){
+    int neighbour_tile = arena.flatten(row-1,col);
+    if(!arena.isObstacle(neighbour_tile) && !arena.isDoor(neighbour_tile)){
+    neighbour_tiles.push_back(neighbour_tile);
+    }
+  }
+  if(!arena.isWall(row,col-1)){
+  int neighbour_tile = arena.flatten(row,col-1);
+    if(!arena.isObstacle(neighbour_tile) && !arena.isDoor(neighbour_tile)){
+    neighbour_tiles.push_back(neighbour_tile);
+    }
+  }
+  if(!arena.isWall(row,col+1)){
+  int neighbour_tile = arena.flatten(row,col+1);
+    if(!arena.isObstacle(neighbour_tile) && !arena.isDoor(neighbour_tile)){
+    neighbour_tiles.push_back(neighbour_tile);
+    }
+  }
+  return neighbour_tiles;
+}
 
 
-  actions inside each state:
-  patrol - rotate forward direction,so it "surveys" the area. also draw the view cone. rotate it slowly, rather than per tick.
-  pick a new path inside the rotated forward dir and move to it. each tick check if we reached that path. if so, calc new path, else, move forward.
-  chase - move to last seen pos
-  engage - while can_see -> shoot at the players direction
-  */
+void Enemy::setup_guard_zones(Arena& arena){
+    arena.tile_to_zone.resize(arena.cols*arena.rows,-1);
 
-// struct EnemyAStateMachine : public StateMachine{
-//   Enemy* agent;
-// };
+    for(int i = 0; i < 3; i++){
+      fill_zone(guard_zones[i],i,arena);
+    }
 
-// struct PatrolState : public State{
-//   virtual void update(StateMachine& controller) override{
-//     // check if spotted
+}
+void Enemy::fill_zone(int start_node, int zone, Arena& arena){
+  std::queue<int> frontier;
+  frontier.push(start_node);
 
-//     if()
+  arena.tile_to_zone[start_node] = zone;
 
-//     // if no transition, continue patrol
-//   }
-//   virtual void on_enter(StateMachine& controller) override{
+  while(!frontier.empty()){
+    int node = frontier.front(); frontier.pop();
 
-//     // find a position to patrol to, start moving
-//   }
-// };
+    for(int neighbour : neighbours_zones(arena, node)){
+        if(arena.tile_to_zone[neighbour] == -1){
+          arena.tile_to_zone[neighbour] = zone;
+          frontier.push(neighbour);
+        }
+    }
+  }
+}

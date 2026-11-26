@@ -135,9 +135,6 @@ std::vector<int> dijkstra(Arena &arena, int start_node, int target_node) {
 }
 
 std::vector<int> neighbours_unweighted(Arena& arena, int tile) {
-  // octile..?
-  // diagonal cost = 1.414
-  // cardinal cost = 1
  std::vector<int> neighbour_tiles;
 
   auto [row,col] = arena.tile_to_row_col(tile);
@@ -187,3 +184,5 @@ std::vector<int> BFS(Arena& arena, int start_node, int target_node){
   }
   return {};
 }
+
+

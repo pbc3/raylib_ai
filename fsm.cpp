@@ -5,11 +5,11 @@
 #include <vector>
 
 
-void EnemyStateMachine::update(Enemy& agent, float dt, Arena& arena, Player& player, std::vector<Bullet>& bullets)
+void EnemyStateMachine::update_enemy_A(Enemy& agent, float dt, Arena& arena, Player& player, std::vector<Bullet>& bullets)
 {
-    auto health_below_threshold = [&](float agent_health, float threshold) -> bool{
+auto health_below_threshold = [&](float agent_health, float threshold) -> bool{
         return agent_health <= threshold;
-    };
+};
 
     switch (state)
     {
@@ -120,6 +120,70 @@ void EnemyStateMachine::update(Enemy& agent, float dt, Arena& arena, Player& pla
 };
 
 
+void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Player& player, std::vector<Bullet>& bullets)
+{
+
+auto health_below_threshold = [&](float agent_health, float threshold) -> bool{
+        return agent_health <= threshold;
+};
+    switch (state)
+    {
+        case EnemyState::GUARD:{
+
+            // transitions
+            if(agent.perceptions.spotted_player){
+                change_state(agent,arena,EnemyState::ENGAGE, player);
+                return;
+             }
+            if(agent.perceptions.in_zone){
+            change_state(agent,arena,EnemyState::INVESTIGATE, player);
+            return;
+            }
+            if(health_below_threshold(agent.health,cover_threshold)){
+                change_state(agent,arena,EnemyState::FLEE, player);
+                return;
+            }
+            
+            // else - rotate FOV slowly
+            agent.forward.rotate(dt * rotation_speed);
+            break;
+        }
+       case EnemyState::FLEE:{
+        MovementState res = agent.follow_path(dt,arena);
+       }
+        case EnemyState::ENGAGE:{
+            // check perceptions for transitions
+            if ((!agent.perceptions.in_range || agent.perceptions.obstructed_los) && !agent.perceptions.in_zone)
+            {
+                change_state(agent, arena, EnemyState::RETURN_TO_POST, player);
+                return;
+            }
+            if(health_below_threshold(agent.health, cover_threshold)){
+                change_state(agent,arena,EnemyState::FLEE,  player);
+                return;
+            }
+            agent.engage_player(arena, dt, player, bullets);
+            break;  
+        }
+
+        case EnemyState::HEAL:{
+            // if no longer providing cover
+            if(agent.perceptions.spotted_player){
+                change_state(agent,arena,EnemyState::FLEE,  player);
+            }
+            if(agent.health > 80){
+                change_state(agent, arena, EnemyState::RETURN_TO_POST,player);
+                return;
+            }
+            agent.health += agent.health * dt;
+            heal_timer += dt;
+            break;
+        }
+    }
+
+};
+
+
 struct Compare{
     bool operator()(const std::pair<float,Vec2>& a,const std::pair<float,Vec2>& b) const {
         return a.first < b.first;
@@ -218,6 +282,11 @@ void EnemyStateMachine::on_enter(Enemy& agent, Arena& arena, Player& player){
             agent.velocity = {400,400}; // speeed boost to run to cover
             Vec2 cover_spot = find_cover(arena,agent, player);
             agent.replan(arena,cover_spot);
+            }
+            case EnemyState::FLEE:{
+                int flee_tile = agent.guard_zones[(agent.guard_zone+1)%3];
+                Vec2 flee_spot = arena.tile_to_world(flee_tile);
+                agent.replan(arena,flee_spot);
             }
 		}
 };

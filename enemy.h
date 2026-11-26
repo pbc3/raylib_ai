@@ -15,10 +15,11 @@
 
 struct Enemy;
 
-struct Perceptions{
+struct  Perceptions{
   Vec2 last_seen_player;
   bool spotted_player;
   bool obstructed_los;
+  bool in_zone;
   bool in_range;
   float view_angle_rads = 1.5708f; // 90* in radians
   float max_distance = 350.f;
@@ -29,8 +30,13 @@ enum class MovementState{
   MOVING,BLOCKED,ARRIVED,NO_PATH
 };
 
+enum class EnemyType{
+  CHASER, GUARD
+};
+
 struct Enemy : public Entity{
-  
+  EnemyType type;
+
   Vec2 velocity;
   float threshold = .2f;
   int goal_tile = -1;
@@ -48,9 +54,14 @@ struct Enemy : public Entity{
   int current_patrol_idx;
   Vec2 current_goal_pos;
 
+  int guard_zone;
+  std::array<int,3> guard_zones = {890, 215, 233}; 
+  void setup_guard_zones(Arena& arena);
+  void fill_zone(int start_node, int zone, Arena& arena);
+
   void update(Arena& arena, Player& player, float dt, std::vector<Bullet>& bullets);
   MovementState follow_path(float dt, Arena& arena);
-  void replan(Arena& arena, Vec2 player_pos);
+  void replan(Arena& arena, Vec2 goal_pos);
   float& take_damage(float dmg);
   void engage_player(Arena& arena, float dt, Player& player, std::vector<Bullet>& bullets);
   void patrol(Arena& arena, float dt);

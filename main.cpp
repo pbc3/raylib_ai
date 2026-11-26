@@ -29,6 +29,10 @@ const char* CHASE_STRING = "CHASE";
 const char* ENGAGE_STRING = "ENGAGE";
 const char* COVER_STRING = "COVER";
 const char* HEAL_STRING = "HEALING";
+const char* GUARD_STRING = "GUARD";
+const char* INVESTIGATE_STRING = "INVESTIGATE";
+const char* FLEE_STRING = "FLEE";
+
   
 std::vector<Color> colours{WHITE,RED};
 
@@ -133,24 +137,27 @@ void draw_grid(Arena &arena) {
       // y = row * 50
       int x = j * TILE_SIZE;
       int y = i * TILE_SIZE;
+
+      int tile = arena.flatten(i,j);
       DrawText(TextFormat("%i", (int) arena.flatten(i,j)), x, y, 3, GREEN);
 
       if (arena.isWall(i, j)) {
         DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, {100, 125, 150, 255});
         continue;
       }
-      // if(arena.isWater()){
-      //   DrawTexture
-      //   continue;
-      // }
-      // if(arena.isObstacle()){
-      //   DrawTexture
-      //   continue;
-      // }
-      // if (arena.grid[i][j] == 1) {
-      //	DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, { 100, 125, 150, 255
-      //});
-      // }
+      if(arena.isWater(tile)){
+        // DrawTexture
+        continue;
+      }
+      if(arena.isObstacle(tile)){
+        // DrawTexture
+        DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, {100, 125, 150, 255});
+        continue;
+      }
+      if(arena.isDoor(tile)){
+        // DrawTexture 
+      }
+
     }
   }
 
@@ -169,7 +176,32 @@ void draw_grid(Arena &arena) {
 };
 
 
+void draw_debu(Arena& arena){
+  Color zone_colors[] = {
+    GREEN, BLUE, PURPLE
+};
 
+for (int i = 0; i < arena.tile_to_zone.size(); i++)
+{
+    int zone = arena.tile_to_zone[i];
+  
+    if (zone == -1)
+        continue;
+
+    int row = i / arena.cols;
+    int col = i % arena.cols;
+  
+    // DrawRectangle(
+    //     col * TILE_SIZE,
+    //     row * TILE_SIZE,
+    //     TILE_SIZE,
+    //     TILE_SIZE,
+    //     zone_colors[zone]
+    // );
+
+    DrawText(TextFormat("%i",zone),col*TILE_SIZE,row*TILE_SIZE,TILE_SIZE,RED);
+}
+}
 
 void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies,  std::vector<Bullet>& bullets, input_state input) {
   // ideally, reduce this to contained function calls. enemy.update(dt);player.update(dt);bullet.update(dt);
@@ -327,6 +359,15 @@ const char* get_state(EnemyState state){
     case EnemyState::HEAL:{
       return HEAL_STRING;
     }
+    case EnemyState::FLEE:{
+      return FLEE_STRING;
+    }
+    case EnemyState::GUARD:{
+      return GUARD_STRING;
+    }
+    case EnemyState::INVESTIGATE:{
+      return INVESTIGATE_STRING;
+    }
     default:
     {
       return "UNKNOWN";
@@ -350,9 +391,29 @@ void spawn_enemy_A(std::vector<Enemy>& enemies, Arena& arena, Player& player){
     enemy.health = 100;
     enemy.perceptions.spotted_player = false;
     enemy.forward = {1.0f,0.f};
+    enemy.type = EnemyType::CHASER;
     enemy.setup_patrol_paths(arena);
     enemy.fsm.on_enter(enemy, arena,player);
     enemies.push_back(enemy);
+}
+void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
+    for(int i = 0; i < 3; i++){
+    Enemy enemy{};
+    enemy.guard_zone = i;
+    enemy.world_pos = arena.tile_to_world(enemy.guard_zones[enemy.guard_zone]);
+    enemy.velocity = {350,350};
+    enemy.size = 30.f;
+    enemy.dead = false; 
+    enemy.health = 100;
+    enemy.perceptions.spotted_player = false;
+    enemy.forward = {1.0f,0.f};
+    enemy.type = EnemyType::GUARD;
+    // enemy.setup_patrol_paths(arena);
+    enemy.fsm.state = EnemyState::GUARD;
+    enemy.fsm.on_enter(enemy, arena,player);
+    enemies.push_back(enemy);
+    }
+
 }
 
   int main() {
@@ -380,10 +441,10 @@ void spawn_enemy_A(std::vector<Enemy>& enemies, Arena& arena, Player& player){
     // needed stuff for section 2
 
     spawn_enemy_A(enemies,arena,player);
-
+    enemies[0].setup_guard_zones(arena);
     // enemies.push_back(enemy1);
-
-
+    
+    spawn_enemy_B(enemies,arena,player);
 
     // setup artefacts
     std::vector<Artefact> artefact_tiles = generate_artefacts(arena,player);
@@ -464,7 +525,7 @@ void spawn_enemy_A(std::vector<Enemy>& enemies, Arena& arena, Player& player){
           { bottom.x, bottom.y },
           RED
       );
-
+      // draw_debu(arena);
       if(draw_debug){
       for(Enemy& enemy : enemies){
       draw_fov_cone(enemy,arena);

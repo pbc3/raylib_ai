@@ -25,7 +25,7 @@ bool out_of_bounds(Arena& arena, Vec2 requested_pos){
           Vec2 boundary = boundaries[i];
           int tile = arena.vec2_to_tile(boundary);
     
-          if(out_of_bounds(arena, boundary) || arena.isWall(tile)){
+          if(out_of_bounds(arena, boundary) || arena.isWall(tile) || arena.isObstacle(tile)){
             return false;
           }
         }
@@ -98,15 +98,33 @@ int Arena::terrain_cost(int _row, int _col){
   return 1;
 };
 
+
+
 bool Arena::isWall(int _row, int _col) {
   int tile_val = tile(_row, _col);
-  return tile_val != 0 ? true : false;
+  return tile_val == 1 ? true : false;
 }
 bool Arena::isWall(int tile_) {
   auto [row,col] = tile_to_row_col(tile_);
   int tile_val = tile(row, col);
-  return tile_val != 0 ? true : false;
+  return tile_val == 1 ? true : false;
 }
+bool Arena::isWater(int tile_){
+  auto [row,col] = tile_to_row_col(tile_);
+  int tile_val = tile(row, col);
+  return tile_val == 2 ? true : false;
+}
+bool Arena::isDoor(int tile_){
+  auto [row,col] = tile_to_row_col(tile_);
+  int tile_val = tile(row, col);
+  return tile_val == 3 ? true : false;
+}
+bool Arena::isObstacle(int tile_){
+  auto [row,col] = tile_to_row_col(tile_);
+  int tile_val = tile(row, col);
+  return tile_val == 4 ? true : false;
+}
+
 int Arena::tile(int r, int c) {
   if (r >= rows || r < 0 || c >= cols || c < 0) {
     //__debugbreak();
