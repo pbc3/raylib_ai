@@ -84,33 +84,16 @@ struct input_state {
 
 
 input_state handle_input(Camera2D camera, Player &player) {
-  input_state input{false, false, false, false, false, {0, 0}};
-  if (IsKeyDown(KEY_W)) {
-    input.move_up = true;
-  }
-  if (IsKeyDown(KEY_A)) {
-    input.move_left = true;
-  }
-  if (IsKeyDown(KEY_S)) {
-    input.move_down = true;
-  }
-  if (IsKeyDown(KEY_D)) {
-    input.move_right = true;
-  }
-
-  // bullets
-  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-    input.firing = true;
-  }
+  input_state input{};
+  input.move_up = IsKeyDown(KEY_W);
+  input.move_down = IsKeyDown(KEY_S);
+  input.move_left = IsKeyDown(KEY_A);
+  input.move_right = IsKeyDown(KEY_D);
+  input.firing = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
   // aim direction
   Vector2 screen_mouse_pos = GetMousePosition();
   Vector2 world_mouse_pos = GetScreenToWorld2D(screen_mouse_pos, camera);
-  input.mouse_dir =
-      (*reinterpret_cast<Vec2 *>(&world_mouse_pos) - player.world_pos)
-          .normalised();
-  // i want to draw a tiny triangle,on the edge of the box, in the direction we
-  // are facing
-
+  input.mouse_dir =(*reinterpret_cast<Vec2 *>(&world_mouse_pos) - player.world_pos).normalised();
   return input;
 }
 
@@ -147,6 +130,7 @@ void draw_grid(Arena &arena) {
       }
       if(arena.isWater(tile)){
         // DrawTexture
+        DrawText("W", x,y,25,RED);
         continue;
       }
       if(arena.isObstacle(tile)){

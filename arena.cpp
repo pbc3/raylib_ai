@@ -102,7 +102,7 @@ int Arena::terrain_cost(int _row, int _col){
 
 bool Arena::isWall(int _row, int _col) {
   int tile_val = tile(_row, _col);
-  return tile_val == 1 ? true : false;
+  return tile_val == -1 || tile_val == TerrainType::WALL;
 }
 bool Arena::isWall(int tile_) {
   auto [row,col] = tile_to_row_col(tile_);

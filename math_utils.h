@@ -46,8 +46,9 @@ struct Vec2 {
   void rotate(float rads){
     float c = std::cosf(rads);
     float s = std::sinf(rads);
-    x = x * c - y * s;
-    y = x * s + y * c;
+    float new_x = x * c - y * s;
+    float new_y = x * s + y * c;
+    x = new_x; y = new_y;
   }
 
   float dot(Vec2 rhs){
