@@ -62,7 +62,42 @@ Arena::Arena(const std::string &csv_path) {
   rows = r;
   map_height = rows * TILE_SIZE;
   map_width = cols * TILE_SIZE;
+
+
+  // setup random
+
+    float max_x = cols * TILE_SIZE;
+    float max_y = rows * TILE_SIZE;
+    gen = std::mt19937(rd());
+    dist_x = std::uniform_real_distribution<float>(0.f,max_x);
+    dist_y = std::uniform_real_distribution<float>(0.f,max_y);
+
 }
+
+Vec2 Arena::random_pos(){
+  Vec2 pos = {0,0};
+  while(!valid_movement(*this,pos,30))
+  {
+      pos = {dist_x(gen),dist_y(gen)};
+  } 
+  return pos;
+}
+
+
+int Arena::terrain_cost(int _row, int _col){
+  int value = tile(_row,_col);
+
+  switch(value){
+    case TerrainType::GROUND:{
+      return 1;
+    } 
+    case TerrainType::WATER:{
+      return 2;
+    }
+  }
+  return 1;
+};
+
 bool Arena::isWall(int _row, int _col) {
   int tile_val = tile(_row, _col);
   return tile_val != 0 ? true : false;

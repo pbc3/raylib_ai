@@ -9,6 +9,10 @@
 
 constexpr int TILE_SIZE = 32;
 
+enum TerrainType{
+  GROUND, WATER
+  // third type
+};
 
 struct Arena {
   int cols;
@@ -16,6 +20,12 @@ struct Arena {
   std::vector<std::vector<int>> grid;
   int map_height;
   int map_width;
+
+  std::uniform_real_distribution<float> dist_x;
+  std::uniform_real_distribution<float> dist_y;
+  std::random_device rd;
+  std::mt19937 gen;
+
   // each row has cols entries. row = y, col = x.
   Arena(const std::string &csv_path);
   Arena(int cols_, int rows_)
@@ -31,6 +41,8 @@ struct Arena {
   int vec2_to_tile(Vec2 world_pos);
   std::pair<int, int> tile_to_row_col(int tile);
   Vec2 tile_to_world(int tile);
+  Vec2 random_pos();
+  int terrain_cost(int _row, int _col);
 };
 
 std::vector<Vec2> tile_path_to_vec2(Arena& arena, std::vector<int>& tile_path);

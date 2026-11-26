@@ -32,16 +32,16 @@ std::vector<std::pair<int, int>> neighbours(Arena& arena, int tile) {
   auto [row,col] = arena.tile_to_row_col(tile);
   // update cost based on ter1in type
   if(!arena.isWall(row+1,col)){
-    neighbour_tiles.push_back({1,arena.flatten(row+1,col)});
+    neighbour_tiles.push_back({arena.terrain_cost(row,col),arena.flatten(row+1,col)});
   }
   if(!arena.isWall(row-1,col)){
-  neighbour_tiles.push_back({1,arena.flatten(row-1,col)});
+  neighbour_tiles.push_back({arena.terrain_cost(row,col),arena.flatten(row-1,col)});
   }
   if(!arena.isWall(row,col-1)){
-  neighbour_tiles.push_back({1,arena.flatten(row,col-1)});
+  neighbour_tiles.push_back({arena.terrain_cost(row,col),arena.flatten(row,col-1)});
   }
   if(!arena.isWall(row,col+1)){
-  neighbour_tiles.push_back({1,arena.flatten(row,col+1)});
+  neighbour_tiles.push_back({arena.terrain_cost(row,col),arena.flatten(row,col+1)});
   }
 
   return neighbour_tiles;

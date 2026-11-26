@@ -19,7 +19,7 @@ enum class EnemyState{
 };
 
 struct EnemyStateMachine {
-	std::vector<int> cover_positions = {411,1208,1294,944,1295,1189}; //  pre defined
+	std::vector<int> cover_positions = {523,1208,1294,944,1295,1189}; //  pre defined
 	float cover_threshold = 41.f;
 	float heal_timer = 0.f;
 	float replan_timer = 0.f;
@@ -35,6 +35,26 @@ struct EnemyStateMachine {
 
 
 
+/*
 
+Enemy B - Sentry:
 
+States:
+Guard, Investigate, Engage, Return to Post, Flee to other enemies area?
 
+Have 4 manually placed "zones". each sentry guards i % 4 zone.
+if a enemy is below threshold health, they flee to another zone (zone = zone + 1 mod 4)
+
+Transitions:
+Guard:
+- Enemy In Zone? - > Investigate
+- Enemy In Range -> Engage
+
+Investigate:
+- Unsuccessful search? - > return to post
+- in range and spotted - > engage
+
+Engage:
+- enemy dead -> return
+- health below <- run to other zone
+*/

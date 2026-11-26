@@ -133,10 +133,20 @@ void draw_grid(Arena &arena) {
       // y = row * 50
       int x = j * TILE_SIZE;
       int y = i * TILE_SIZE;
+      DrawText(TextFormat("%i", (int) arena.flatten(i,j)), x, y, 3, GREEN);
+
       if (arena.isWall(i, j)) {
         DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, {100, 125, 150, 255});
+        continue;
       }
-       DrawText(TextFormat("%i", (int) arena.flatten(i,j)), x, y, 3, GREEN);
+      // if(arena.isWater()){
+      //   DrawTexture
+      //   continue;
+      // }
+      // if(arena.isObstacle()){
+      //   DrawTexture
+      //   continue;
+      // }
       // if (arena.grid[i][j] == 1) {
       //	DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, { 100, 125, 150, 255
       //});
@@ -158,48 +168,6 @@ void draw_grid(Arena &arena) {
 
 };
 
-
-
-// bool bullet_hit(Bullet& bullet, Entity& entity){
-//     Rectangle r;
-//     float half_size = entity.size / 2;
-//     r.x = entity.world_pos.x - half_size;
-//     r.y = entity.world_pos.y - half_size;
-//     r.width = half_size * 2;
-//     r.height = half_size * 2;
-//   return CheckCollisionCircleRec(*reinterpret_cast<Vector2*>(&bullet.world_pos),bullet.size,r);
-// };
-
-// Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet){
-//   // loop over each enemy, and then the player. see if the bullet collides
-//   // check enemies
-//   if(bullet.team == Team::PLAYER){
-//     for(Enemy& enemy : enemies){
-//       if(bullet_hit(bullet,enemy)){
-//         bullet.expired = true;
-//         return &enemy;
-//       }
-//     }
-//   }
-//     else{
-//       // check whether bullet hit player
-//       if(bullet_hit(bullet,player)){
-//         bullet.expired = true;
-//         return &player;
-//       }
-//     }
-//     return nullptr;
-// }
-
-// void spawn_bullet(std::vector<Bullet>& bullets, Vec2 spawn_pos, Vec2 direction, Team team){
-//   Bullet b;
-//   b.world_pos = spawn_pos;
-//   b.velocity = direction * b.bullet_speed;
-//   b.expired = false;
-//   b.team = team;
-//   b.size = 5.0f;
-//   bullets.push_back(b);
-// }
 
 
 
@@ -317,7 +285,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
     }
   }
 
-void draw_fov_cone(Enemy& enemy){
+void draw_fov_cone(Enemy& enemy,Arena& arena){
   float half_fov =  enemy.perceptions.view_angle_rads / 2.f;
   float dir_ang = std::atan2f(enemy.forward.y,enemy.forward.x);
   std::vector<Vector2> points;
@@ -326,7 +294,8 @@ void draw_fov_cone(Enemy& enemy){
     Vector2 point = {enemy.world_pos.x + std::cosf(dir_ang + angle) * enemy.perceptions.max_distance,
      enemy.world_pos.y + std::sinf(dir_ang + angle) * enemy.perceptions.max_distance
     };
-      points.push_back(point);
+// todo - raymarch and check if a wall is there, then stop drawing the line at that point
+    points.push_back(point);
   }
 
 DrawLineV(
@@ -371,6 +340,20 @@ void draw_artefacts(Arena& arena, std::vector<Artefact>& artefact_tiles){
       }
 };
 
+void spawn_enemy_A(std::vector<Enemy>& enemies, Arena& arena, Player& player){
+    Vec2 random_spawn = arena.random_pos();
+    Enemy enemy{};
+    enemy.world_pos = random_spawn;
+    enemy.velocity = {350,350};
+    enemy.size = 30.f;
+    enemy.dead = false; 
+    enemy.health = 100;
+    enemy.perceptions.spotted_player = false;
+    enemy.forward = {1.0f,0.f};
+    enemy.setup_patrol_paths(arena);
+    enemy.fsm.on_enter(enemy, arena,player);
+    enemies.push_back(enemy);
+}
 
   int main() {
 
@@ -395,30 +378,9 @@ void draw_artefacts(Arena& arena, std::vector<Artefact>& artefact_tiles){
     std::vector<Enemy> enemies;
     // todo - factor into a spawn enemy function, then factor that all into a setup_game() including the enemy, initial path, and the spawning of the
     // needed stuff for section 2
-    Enemy enemy{};
-    enemy.world_pos = {456,400};
-    enemy.velocity = {350,350};
-    enemy.size = 30.f;
-    enemy.dead = false; 
-    enemy.health = 100;
-    enemy.perceptions.spotted_player = false;
-    enemy.forward = {-1,0.f};
 
-    Enemy enemy1{};
-    enemy1.world_pos = {657,400};
-    enemy1.velocity = {300,300};
-    enemy1.size = 20.f;
-    enemy1.health = 100; player.health = 100;
-    enemy1.dead = false;
-    enemy1.perceptions.spotted_player = false;
-    enemy1.forward = {-1,0.f};
-    enemy.velocity = {500,500};
+    spawn_enemy_A(enemies,arena,player);
 
-    // setup initial paths
-    enemy1.setup_patrol_paths(arena);
-    enemy.setup_patrol_paths(arena);
-    enemy.fsm.on_enter(enemy, arena,player);
-    enemies.push_back(enemy);
     // enemies.push_back(enemy1);
 
 
@@ -432,16 +394,30 @@ void draw_artefacts(Arena& arena, std::vector<Artefact>& artefact_tiles){
 
     std::vector<Bullet> bullets;
 
+    // debug = enemy paths and FOV visualisation
+    bool draw_debug = false;
 
     // todo - clamp camera to map edges
     Camera2D camera = {0};
     camera.zoom = 1.f;
     camera.offset = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
-    bool draw_paths = true;
     while (!WindowShouldClose()) {
+
+
+
       if(IsKeyPressed(KEY_R)) {
-       arena.grid[19][15] = !arena.grid[19][15];
+       arena.grid[25][15] = !arena.grid[25][15];
       }
+
+
+      if(IsKeyPressed(KEY_B)) {
+        draw_debug = !draw_debug;
+      }
+
+      if(IsKeyPressed(KEY_Q)){
+         spawn_enemy_A(enemies,arena,player);
+      }
+
       float dt = GetFrameTime();
       input_state input = handle_input(camera, player);
       update(arena, dt, player, enemies,bullets, input);
@@ -461,38 +437,37 @@ void draw_artefacts(Arena& arena, std::vector<Artefact>& artefact_tiles){
       for(int i = 0; i < enemies.size(); i++){
         auto& enemy = enemies[i];
         Vec2 enemy_top_left = enemy.world_pos - Vec2{enemy.size / 2, enemy.size / 2};
-        DrawRectangleV(*reinterpret_cast<Vector2 *>(&enemy_top_left),{enemy.size, enemy.size}, colours[i]);
+        DrawRectangleV(*reinterpret_cast<Vector2 *>(&enemy_top_left),{enemy.size, enemy.size}, colours[(i + 1) % colours.size()]);
         DrawText(TextFormat("%i", (int) enemy.health), enemy.world_pos.x+enemy.size/2, enemy.world_pos.y-50, 40, GREEN);
         DrawText(TextFormat("%s", get_state(enemy.fsm.state)), enemy.world_pos.x+enemy.size/2, enemy.world_pos.y-10, 40, GREEN);
       }
       DrawRectangleLines(player_top_left.x, player_top_left.y, player.size,player.size, RAYWHITE);
 
-      //Draw Aim Triangle
       float half = player.size / 2;
       float gap = 10.0f;
 
-          Vec2 dir = { input.mouse_dir.x, input.mouse_dir.y };
-          Vec2 perpendicular = { -dir.y, dir.x };
+      Vec2 dir = { input.mouse_dir.x, input.mouse_dir.y };
+      Vec2 perpendicular = { -dir.y, dir.x };
 
-          Vec2 tip = player.world_pos + dir * (half + gap);
+      Vec2 tip = player.world_pos + dir * (half + gap);
 
-          Vec2 top = player.world_pos
-              + dir * half
-              - perpendicular * (half / 2);
+      Vec2 top = player.world_pos
+          + dir * half
+          - perpendicular * (half / 2);
 
-          Vec2 bottom = player.world_pos
-              + dir * half
-              + perpendicular * (half / 2);
-                DrawTriangle(
-              { tip.x, tip.y },
-              { top.x, top.y },
-              { bottom.x, bottom.y },
-              RED
-          );
+      Vec2 bottom = player.world_pos
+          + dir * half
+          + perpendicular * (half / 2);
+            DrawTriangle(
+          { tip.x, tip.y },
+          { top.x, top.y },
+          { bottom.x, bottom.y },
+          RED
+      );
 
-      if(draw_paths){
+      if(draw_debug){
       for(Enemy& enemy : enemies){
-      draw_fov_cone(enemy);
+      draw_fov_cone(enemy,arena);
       for(auto waypoint_pos : enemy.cur_path){
         DrawCircle(waypoint_pos.x, waypoint_pos.y, 2.2, RED);
       }
@@ -503,22 +478,9 @@ void draw_artefacts(Arena& arena, std::vector<Artefact>& artefact_tiles){
     EndDrawing();
     if (!enemies.empty()) {
     const Enemy& e = enemies[0];
-    DrawText(
-        TextFormat(
-            "STATE: %d | GOAL: %d | WP: %d/%d | SEEN: %d | RANGE: %d",
-            static_cast<int>(e.fsm.state),
-            e.goal_tile,
-            e.cur_waypoint,
-              static_cast<int>(e.cur_path.size()),
-            e.perceptions.spotted_player,
-            e.perceptions.in_range
-        ),
-        10, 10, 20, GREEN
-    );
-
+    DrawText(TextFormat( "STATE: %d | GOAL: %d | WP: %d/%d | SEEN: %d | RANGE: %d"
+      ,static_cast<int>(e.fsm.state),e.goal_tile,e.cur_waypoint,static_cast<int>(e.cur_path.size()),e.perceptions.spotted_player,e.perceptions.in_range), 10, 10, 10, GREEN);
 }
-    // DrawText(TextFormat("FPS: %i", GetFPS()), 10, 10, 20, GREEN);
-    // DrawText(TextFormat("Health: %i", (int) player.health), 360, 10, 20, GREEN);
   }
 
   CloseWindow();

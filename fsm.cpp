@@ -94,17 +94,19 @@ void EnemyStateMachine::update(Enemy& agent, float dt, Arena& arena, Player& pla
           
             MovementState move_res = agent.follow_path(dt, arena);
             if(move_res == MovementState::ARRIVED){
-                // if(!still_providing_cover(cover_position)){
-                //     find_cover(arena,agent,player); // try again
-                // }
+                if(agent.perceptions.spotted_player){
+                    find_cover(arena,agent,player); // try again
+                }
                 change_state(agent,arena,EnemyState::HEAL, player);
             }
             // else - not at cover yet, tick over...
             break;
         }
         case EnemyState::HEAL:{
-            // lerp heal slowly back up to 60-80, transition to..? idk, check transition conditons like normal
-            
+            // if no longer providing cover
+            if(agent.perceptions.spotted_player){
+                    change_state(agent,arena,EnemyState::TAKE_COVER,  player);
+            }
             if(agent.health > 80){
                 change_state(agent, arena, EnemyState::PATROL,player);
                 return;
@@ -160,6 +162,7 @@ Vec2 EnemyStateMachine::find_cover(Arena& arena, Enemy& agent, Player& player){
                 los_blocked = true;
             }
         }
+
         if(!los_blocked){
             continue;
         }
@@ -257,4 +260,6 @@ void EnemyStateMachine::change_state(Enemy& agent, Arena& arena, EnemyState next
     artefacts!!
 
 */
+
+
 
