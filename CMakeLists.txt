@@ -25,7 +25,14 @@ add_custom_target(copy_map_binary
         "$<TARGET_FILE_DIR:GameAI>/assets/map_binary.csv"
     VERBATIM
 )
-add_dependencies(GameAI copy_arena copy_map_binary)
+add_custom_target(copy_texture
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:GameAI>/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/arena.png"
+        "$<TARGET_FILE_DIR:GameAI>/assets/arena.png"
+    VERBATIM
+)
+add_dependencies(GameAI copy_arena copy_map_binary copy_texture)
 add_dependencies(GameAI copy_arena)
 
 add_subdirectory(vendor/raylib)

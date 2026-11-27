@@ -1,23 +1,59 @@
 #include "artefacts.h"
 
-std::vector<Artefact> generate_artefacts(Arena& arena, Player& player){
-    // return from a vector of tile locations for the artefacts
-    // to_do - store random generator inside arena, construct it on creation, and give me a Vec2 random_location function, also rename iswall to is obstacle
-    // basic first - just make them reachable from the player, and not a wall
-    float max_x = arena.cols * TILE_SIZE;
-    float max_y = arena.rows * TILE_SIZE;
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist_x(0.f,max_x);
-    std::uniform_real_distribution<float> dist_y(0.f,max_y);
-    std::vector<Artefact> locations;
-    while(locations.size() <= 18){
-        Vec2 candidate = {dist_x(gen), dist_y(gen)};
+
+std::array<ArtefactSet,6> generate_artefacts(Arena& arena, Player& player){
+    std::array<const char*, 6> texture_names = {"assets/diamond.png", "assets/potion.png", "assets/skull.png", "assets/stave.png", "assets/book.png", "assets/scroll.png"};
+    std::array<ArtefactSet,6> artefact_sets;
+
+
+    // first - generate locations
+   auto locations = generate_artefact_locations(arena, player);
+
+    // setup sets for each type of artefact
+    int outer_idx = 0;
+    int inner_idx = 0;
+    for(ArtefactSet& artefact_set : artefact_sets){
+        auto tex = LoadTexture(texture_names[outer_idx]);
+        artefact_set.tex = tex;
+        for(int i = 0; i < 3; i++){
+            Artefact af{};
+            af.world_pos = locations[inner_idx];
+            inner_idx ++;
+            artefact_set.artefacts[i] = af;
+        }
+        outer_idx++;
+    }
+    return artefact_sets;
+}
+
+std::vector<Vec2> generate_artefact_locations(Arena& arena, Player& player){
+    std::vector<Vec2> locations;
+       while(locations.size() < 18){
+        Vec2 candidate = arena.random_pos();
         int tile = arena.vec2_to_tile(candidate);
+        candidate = arena.tile_to_world(tile); // centre it
         // reject walls & obstacles
-        if(arena.isWall(tile)){
+        if(!arena.isSuitableArtefact(tile)){
             continue;
         }
+        // minimum spacing
+
+        bool safe_loc = true;
+        for(Vec2 loc : locations){
+            if(loc.distance(candidate) < 128.f){
+                safe_loc = false;
+                break;
+            }
+        }
+        if(!safe_loc){
+            continue;
+        }
+
+        // dont spawn a artefact next to walls
+        if(neighbours_contain_obstacles(arena, tile)){
+            continue;
+        }
+
         // accessibility verification
         int player_tile = arena.vec2_to_tile(player.world_pos);
         auto path = astar(arena,player_tile,tile);
@@ -25,11 +61,19 @@ std::vector<Artefact> generate_artefacts(Arena& arena, Player& player){
             continue;
         }
 
-        // TODO - MINIMUM SPACING BETWEEN EXISTING ONES
-        Artefact af;
-        af.collected = false;
-        af.world_pos = candidate;
-        locations.push_back(af);
+        locations.push_back(candidate);
     }
     return locations;
+}
+
+bool neighbours_contain_obstacles(Arena& arena, int tile){
+auto [row,col] = arena.tile_to_row_col(tile);
+  int tile1 = arena.flatten(row+1,col);
+  int tile2 = arena.flatten(row-1,col);
+  int tile3 = arena.flatten(row,col+1);
+  int tile4 = arena.flatten(row,col-1);
+  if(!arena.isSuitableArtefact(tile1) || !arena.isSuitableArtefact(tile2) || !arena.isSuitableArtefact(tile3)|| !arena.isSuitableArtefact(tile4)){
+    return true;
+  }
+  return false;
 }

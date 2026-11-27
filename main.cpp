@@ -16,8 +16,8 @@
 #include "bullet.h"
 #include "pathfinding.h"
 
-constexpr int SCREEN_WIDTH = 1920;
-constexpr int SCREEN_HEIGHT = 1080;
+constexpr int SCREEN_WIDTH = 1280;
+constexpr int SCREEN_HEIGHT = 704;
 constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE;   // screen x / tile
 constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
 constexpr Color GRID_COLOUR = {48, 59, 72, 255};
@@ -26,7 +26,14 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 // constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
 
 
-  
+Vec2 centre_to_top_left(Vec2 centre_coords, float size){
+  float half_s = size/2;
+  float x = centre_coords.x - half_s;
+  float y = centre_coords.y - half_s;
+  return {x,y};
+};
+
+
 std::vector<Color> colours{WHITE,RED};
 
 bool bullet_hit(Bullet& bullet, Entity& entity){
@@ -62,8 +69,7 @@ Entity* hit_entity(Player& player, std::vector<Enemy>& enemies, Bullet& bullet){
 
 
 
-  // todo - factor these bools into a single enum, with helper functions like
-  // is_move_up etc
+  // todo - factor these bools into a single enum
 
 
 struct input_state {
@@ -115,7 +121,6 @@ void draw_grid(Arena &arena) {
       int y = i * TILE_SIZE;
 
       int tile = arena.flatten(i,j);
-      DrawText(TextFormat("%i", (int) arena.flatten(i,j)), x, y, 3, GREEN);
 
       if (arena.isWall(i, j)) {
         DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, {100, 125, 150, 255});
@@ -123,12 +128,11 @@ void draw_grid(Arena &arena) {
       }
       if(arena.isWater(tile)){
         // DrawTexture
-        DrawText("W", x,y,25,RED);
         continue;
       }
       if(arena.isObstacle(tile)){
         // DrawTexture
-        DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, {100, 125, 150, 255});
+        // DrawRectangle(x, y, TILE_SIZE, TILE_SIZE, {100, 125, 150, 255});
         continue;
       }
       if(arena.isDoor(tile)){
@@ -334,11 +338,14 @@ const char* get_state(EnemyState state){
   return ENEMY_STATE_STRINGS[std::bit_cast<int>(state)];
 };
 
-void draw_artefacts(Arena& arena, std::vector<Artefact>& artefact_tiles){
-      for(Artefact artefact_tile : artefact_tiles){
-        Vec2 world_loc = (artefact_tile.world_pos);
-        DrawCircle(world_loc.x,world_loc.y,3,BLUE);
-      }
+void draw_artefacts(Arena& arena, std::array<ArtefactSet,6>& artefact_sets){
+  for(auto af_set : artefact_sets){
+    for(int i = 0; i < 3; i++){
+      Vec2 pos = af_set.artefacts[i].world_pos;
+      Vec2 top_left = centre_to_top_left(pos,32.f);
+      DrawTexture(af_set.tex,top_left.x,top_left.y,WHITE);
+    }
+  }
 };
 
 void spawn_enemy_A(std::vector<Enemy>& enemies, Arena& arena, Player& player){
@@ -377,6 +384,9 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
 
 }
 
+
+
+
   int main() {
 
     SetTargetFPS(120);
@@ -387,8 +397,11 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
     // csv = csvv.string();
     // auto cs = ".assets\arena.csv";
     Arena arena(csv.string());
+    const auto arena_tex = std::filesystem::path(GetApplicationDirectory()) / "assets" / "arena.png";
+    // assert(std::filesystem::exists(path));
 
 
+   
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
 
     //gameplay setup
@@ -410,7 +423,7 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
     spawn_enemy_B(enemies,arena,player);
 
     // setup artefacts
-    std::vector<Artefact> artefact_tiles = generate_artefacts(arena,player);
+    auto artefact_tiles = generate_artefacts(arena,player);
 
 
     auto cur_time = std::chrono::steady_clock::now();
@@ -425,6 +438,10 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
     Camera2D camera = {0};
     camera.zoom = 1.f;
     camera.offset = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
+
+    auto tex = LoadTexture(arena_tex.string().c_str());
+
+
     while (!WindowShouldClose()) {
 
 
@@ -448,11 +465,14 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
 
       //render
       BeginDrawing();
-      ClearBackground({32, 38, 48, 255});
+      ClearBackground({0,0,0,0});
       camera.target = {player.world_pos.x,player.world_pos.y};
       BeginMode2D(camera);
       
       //  todo - stop drawing the grid every frame, draw it once into a texture,
+      DrawTexture(tex, 0, 0, {WHITE});
+TraceLog(LOG_INFO, "Texture: %dx%d",
+    tex.width, tex.height);
       draw_grid(arena);
       draw_artefacts(arena,artefact_tiles);
       for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, b.size, BLACK);}
@@ -499,6 +519,7 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
   }
 
     EndMode2D();
+
     EndDrawing();
     DrawText(TextFormat("FPS:%i",GetFPS()),0,30,25,RED);
     if (!enemies.empty()) {

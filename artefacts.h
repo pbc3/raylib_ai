@@ -17,4 +17,6 @@ struct ArtefactSet{
     std::array<Artefact,3> artefacts;
 };
 
-std::vector<Artefact> generate_artefacts(Arena& arena, Player& player);
+std::array<ArtefactSet,6> generate_artefacts(Arena& arena, Player& player);
+std::vector<Vec2> generate_artefact_locations(Arena& arena, Player& player);
+bool neighbours_contain_obstacles(Arena& arena, int tile);

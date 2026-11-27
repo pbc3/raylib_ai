@@ -36,7 +36,7 @@ struct Arena {
   bool isObstacle(int tile);
   bool isDoor(int tile_);
   bool isWalkable(int tile);
-
+  bool isSuitableArtefact(int tile);
 
 
   int flatten(int row, int col);

@@ -130,6 +130,12 @@ if(isWall(tile) || isObstacle(tile) || out_of_bounds(*this,tile_to_world(tile)))
     }
     return true;
 }
+bool Arena::isSuitableArtefact(int tile){
+  if(!isWalkable(tile) || isDoor(tile)){
+    return false;
+  }
+  return true;
+}
 int Arena::tile(int r, int c) {
   if (r >= rows || r < 0 || c >= cols || c < 0) {
     //__debugbreak();
