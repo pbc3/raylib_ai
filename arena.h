@@ -30,14 +30,17 @@ struct Arena {
   Arena(const std::string &csv_path);
   Arena(int cols_, int rows_): cols(cols_), rows(rows_), grid(rows, std::vector<int>(cols, 0)), map_height(rows * TILE_SIZE), map_width(cols * TILE_SIZE) {};
   int tile(int r, int c);
+
   bool isWall(int _row, int _col);
   bool isWall(int tile);
   bool isWater(int tile);
   bool isObstacle(int tile);
+  bool isClosedDoor(int tile_);
+  bool isOpenDoor(int tile_);
   bool isDoor(int tile_);
   bool isWalkable(int tile);
   bool isSuitableArtefact(int tile);
-
+  void open_door(int player_tile, std::vector<int>& open_door_tiles);
 
   int flatten(int row, int col);
   int vec2_to_tile(Vec2 world_pos);
