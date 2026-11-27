@@ -126,22 +126,23 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
 auto health_below_threshold = [&](float agent_health, float threshold) -> bool{
         return agent_health <= threshold;
 };
+if(state != EnemyState::FLEE && state != EnemyState::HEAL && health_below_threshold(agent.health, cover_threshold)){
+        change_state(agent,arena,EnemyState::FLEE,player);
+}
+bool can_engage = agent.perceptions.spotted_player && agent.perceptions.in_range && !agent.perceptions.obstructed_los;
+
     switch (state)
     {
         case EnemyState::GUARD:{
 
             // transitions
-            if(agent.perceptions.spotted_player){
+            if(can_engage){
                 change_state(agent,arena,EnemyState::ENGAGE, player);
                 return;
-             }
+            }
             if(agent.perceptions.in_zone){
             change_state(agent,arena,EnemyState::INVESTIGATE, player);
             return;
-            }
-            if(health_below_threshold(agent.health,cover_threshold)){
-                change_state(agent,arena,EnemyState::FLEE, player);
-                return;
             }
             
             // else - rotate FOV slowly
@@ -149,31 +150,39 @@ auto health_below_threshold = [&](float agent_health, float threshold) -> bool{
             break;
         }
         case EnemyState::INVESTIGATE:{
+
+            if(can_engage){
+                    change_state(agent,arena,EnemyState::ENGAGE,player);
+                    return;
+            }
+
+
             MovementState res = agent.follow_path(dt,arena);
             if(res == MovementState::ARRIVED || res == MovementState::BLOCKED){
+                agent.scanning = true;
                 float prog = dt / rotation_speed;
                 agent.rotation_progress += prog;
                 float rads = (2.0 * std::numbers::pi) * prog;
                 agent.forward.rotate(rads);
-                if(agent.perceptions.spotted_player){
-                    change_state(agent,arena,EnemyState::ENGAGE,player);
-                    break;
-                }
+             
                 if(agent.rotation_progress >= 1.0f){
-                    if((agent.current_investigate_corner + 1) >= 3){
+                    agent.rotation_progress = 0.0f;
+                    if((agent.current_investigate_corner + 1) >= agent.investigate_zones[agent.guard_zone].size()){
                     // checked all corners
                     change_state(agent,arena,EnemyState::RETURN_TO_POST,player);
+                    return;
                     }
                     else{
-                        int next_corner = agent.investigate_zones[agent.guard_zone][agent.current_investigate_corner + 1];
+                        int next_corner = agent.investigate_zones[agent.guard_zone][++agent.current_investigate_corner];
                         Vec2 world_pos = arena.tile_to_world(next_corner);
                         agent.replan(arena,world_pos);
                     }
                 }
                 else{
-                        // do nothing, follow path next tick
+                    // 
                 }
             }
+            break;
         }
        case EnemyState::FLEE:{
         MovementState res = agent.follow_path(dt,arena);
@@ -182,19 +191,34 @@ auto health_below_threshold = [&](float agent_health, float threshold) -> bool{
         }
         break;
        }
+       case EnemyState::RETURN_TO_POST:{
+                if(can_engage){
+                    change_state(agent,arena,EnemyState::ENGAGE,player);
+                    return;
+            }
+        MovementState res = agent.follow_path(dt,arena);
+        if(res == MovementState::ARRIVED){
+            change_state(agent,arena,EnemyState::GUARD,player);
+            break;
+        }
+        break;
+       }
         case EnemyState::ENGAGE:{
             // check perceptions for transitions
-            if ((!agent.perceptions.in_range || agent.perceptions.obstructed_los) && !agent.perceptions.in_zone)
-            {
-                change_state(agent, arena, EnemyState::RETURN_TO_POST, player);
-                return;
-            }
-            if(health_below_threshold(agent.health, cover_threshold)){
-                change_state(agent,arena,EnemyState::FLEE,  player);
-                return;
-            }
+           if(can_engage){
             agent.engage_player(arena, dt, player, bullets);
-            break;  
+            break;
+           }
+           if(agent.perceptions.in_zone){
+            change_state(agent,arena,EnemyState::INVESTIGATE,player);
+            break;
+           }
+           else{
+            change_state(agent,arena,EnemyState::RETURN_TO_POST,player);
+            break;
+           }
+
+            break;      
         }
 
         case EnemyState::HEAL:{
@@ -241,18 +265,29 @@ void EnemyStateMachine::on_enter(Enemy& agent, Arena& arena, Player& player){
             break;
             }
             case EnemyState::FLEE:{
-                int flee_tile = agent.guard_zones[(agent.guard_zone+1)%3];
+                std::cout << agent.guard_zone << "\n";
+                int flee_idx = (agent.guard_zone + 1) % 3;
+                std::cout << flee_idx;
+                int flee_tile = agent.guard_zones[flee_idx];
                 Vec2 flee_spot = arena.tile_to_world(flee_tile);
                 agent.replan(arena,flee_spot);
                 break;
             }
             case EnemyState::INVESTIGATE:{
                 // how should i investigate? ideally i want him to cover the whole search area..
+                agent.scanning = false;
                 agent.rotation_progress = 0.0f;
                 agent.current_investigate_corner = 0;
                 int first_corner_tile = agent.investigate_zones[agent.guard_zone][0];
                 Vec2 first_corner = arena.tile_to_world(first_corner_tile);
                 agent.replan(arena,first_corner);
+                break;
+            }
+            case EnemyState::RETURN_TO_POST:{
+                int post_tile = agent.guard_zones[agent.guard_zone];
+                Vec2 world = arena.tile_to_world(post_tile);
+                agent.replan(arena, world);
+                break;
             }
 		}
 };

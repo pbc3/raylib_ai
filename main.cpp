@@ -499,6 +499,7 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
 
     EndMode2D();
     EndDrawing();
+    DrawText(TextFormat("FPS:%i",GetFPS()),0,30,25,RED);
     if (!enemies.empty()) {
     const Enemy& e = enemies[0];
     DrawText(TextFormat( "STATE: %d | GOAL: %d | WP: %d/%d | SEEN: %d | RANGE: %d"
