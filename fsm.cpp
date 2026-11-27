@@ -148,8 +148,39 @@ auto health_below_threshold = [&](float agent_health, float threshold) -> bool{
             agent.forward.rotate(dt * rotation_speed);
             break;
         }
+        case EnemyState::INVESTIGATE:{
+            MovementState res = agent.follow_path(dt,arena);
+            if(res == MovementState::ARRIVED || res == MovementState::BLOCKED){
+                float prog = dt / rotation_speed;
+                agent.rotation_progress += prog;
+                float rads = (2.0 * std::numbers::pi) * prog;
+                agent.forward.rotate(rads);
+                if(agent.perceptions.spotted_player){
+                    change_state(agent,arena,EnemyState::ENGAGE,player);
+                    break;
+                }
+                if(agent.rotation_progress >= 1.0f){
+                    if((agent.current_investigate_corner + 1) >= 3){
+                    // checked all corners
+                    change_state(agent,arena,EnemyState::RETURN_TO_POST,player);
+                    }
+                    else{
+                        int next_corner = agent.investigate_zones[agent.guard_zone][agent.current_investigate_corner + 1];
+                        Vec2 world_pos = arena.tile_to_world(next_corner);
+                        agent.replan(arena,world_pos);
+                    }
+                }
+                else{
+                        // do nothing, follow path next tick
+                }
+            }
+        }
        case EnemyState::FLEE:{
         MovementState res = agent.follow_path(dt,arena);
+        if(res == MovementState::ARRIVED){
+            change_state(agent,arena,EnemyState::HEAL,player);
+        }
+        break;
        }
         case EnemyState::ENGAGE:{
             // check perceptions for transitions
@@ -169,7 +200,7 @@ auto health_below_threshold = [&](float agent_health, float threshold) -> bool{
         case EnemyState::HEAL:{
             // if no longer providing cover
             if(agent.perceptions.spotted_player){
-                change_state(agent,arena,EnemyState::FLEE,  player);
+                change_state(agent,arena,EnemyState::FLEE, player);
             }
             if(agent.health > 80){
                 change_state(agent, arena, EnemyState::RETURN_TO_POST,player);
@@ -182,6 +213,83 @@ auto health_below_threshold = [&](float agent_health, float threshold) -> bool{
     }
 
 };
+
+
+
+
+
+void EnemyStateMachine::on_enter(Enemy& agent, Arena& arena, Player& player){
+		// enter new state
+			switch(state){
+			case EnemyState::PATROL:
+			// enter
+            agent.velocity = {150,150};
+            agent.replan(arena,agent.patrol_targets[agent.current_patrol_idx]);
+			break;
+			case EnemyState::CHASE:
+			// enter
+            agent.velocity = {350,350};
+            agent.replan(arena,agent.perceptions.last_seen_player);
+			break;
+			case EnemyState::ENGAGE:
+			// enter
+			break;
+            case EnemyState::TAKE_COVER:{
+            agent.velocity = {400,400}; // speeed boost to run to cover
+            Vec2 cover_spot = find_cover(arena,agent, player);
+            agent.replan(arena,cover_spot);
+            break;
+            }
+            case EnemyState::FLEE:{
+                int flee_tile = agent.guard_zones[(agent.guard_zone+1)%3];
+                Vec2 flee_spot = arena.tile_to_world(flee_tile);
+                agent.replan(arena,flee_spot);
+                break;
+            }
+            case EnemyState::INVESTIGATE:{
+                // how should i investigate? ideally i want him to cover the whole search area..
+                agent.rotation_progress = 0.0f;
+                agent.current_investigate_corner = 0;
+                int first_corner_tile = agent.investigate_zones[agent.guard_zone][0];
+                Vec2 first_corner = arena.tile_to_world(first_corner_tile);
+                agent.replan(arena,first_corner);
+            }
+		}
+};
+
+
+
+void EnemyStateMachine::on_exit(Enemy& agent){
+		// exit cur state
+			switch(state){
+			case EnemyState::PATROL:
+			// exit
+			break;
+
+			case EnemyState::CHASE:
+			// exit
+			break;
+
+			case EnemyState::ENGAGE:
+			// exit
+			break;
+            
+            case EnemyState::TAKE_COVER:{
+                break;
+            }
+            case EnemyState::HEAL:{
+                heal_timer = 0;
+                break;
+            }
+		}
+}
+
+void EnemyStateMachine::change_state(Enemy& agent, Arena& arena, EnemyState next_state, Player& player) {
+		on_exit(agent);
+		state = next_state;
+		on_enter(agent, arena, player);
+}
+
 
 
 struct Compare{
@@ -259,70 +367,6 @@ Vec2 EnemyStateMachine::find_cover(Arena& arena, Enemy& agent, Player& player){
     }
     return scored_positions.empty() ? arena.tile_to_world(cover_positions[0]) : scored_positions.top().second;
 };
-
-
-
-void EnemyStateMachine::on_enter(Enemy& agent, Arena& arena, Player& player){
-		// enter new state
-			switch(state){
-			case EnemyState::PATROL:
-			// enter
-            agent.velocity = {150,150};
-            agent.replan(arena,agent.patrol_targets[agent.current_patrol_idx]);
-			break;
-			case EnemyState::CHASE:
-			// enter
-            agent.velocity = {350,350};
-            agent.replan(arena,agent.perceptions.last_seen_player);
-			break;
-			case EnemyState::ENGAGE:
-			// enter
-			break;
-            case EnemyState::TAKE_COVER:{
-            agent.velocity = {400,400}; // speeed boost to run to cover
-            Vec2 cover_spot = find_cover(arena,agent, player);
-            agent.replan(arena,cover_spot);
-            }
-            case EnemyState::FLEE:{
-                int flee_tile = agent.guard_zones[(agent.guard_zone+1)%3];
-                Vec2 flee_spot = arena.tile_to_world(flee_tile);
-                agent.replan(arena,flee_spot);
-            }
-		}
-};
-
-
-
-void EnemyStateMachine::on_exit(Enemy& agent){
-		// exit cur state
-			switch(state){
-			case EnemyState::PATROL:
-			// exit
-			break;
-
-			case EnemyState::CHASE:
-			// exit
-			break;
-
-			case EnemyState::ENGAGE:
-			// exit
-			break;
-            
-            case EnemyState::TAKE_COVER:{
-                break;
-            }
-            case EnemyState::HEAL:{
-                heal_timer = 0;
-                break;
-            }
-		}
-}
-
-void EnemyStateMachine::change_state(Enemy& agent, Arena& arena, EnemyState next_state, Player& player) {
-		on_exit(agent);
-		state = next_state;
-		on_enter(agent, arena, player);
-}
 
 
 /*

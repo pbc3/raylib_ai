@@ -15,9 +15,9 @@ struct Player;
 struct Bullet;
 
 enum class EnemyState{
-	PATROL, CHASE, // for chaser enemy
-	GUARD, INVESTIGATE, RETURN_TO_POST, FLEE, // for guard enemy
-	TAKE_COVER, HEAL, ENGAGE // shared 
+	PATROL,CHASE,TAKE_COVER,
+	HEAL,ENGAGE,
+	GUARD,INVESTIGATE,FLEE,RETURN_TO_POST
 };
 
 struct EnemyStateMachine {

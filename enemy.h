@@ -53,12 +53,16 @@ struct Enemy : public Entity{
 	std::vector<Vec2> patrol_targets;
   int current_patrol_idx;
   Vec2 current_goal_pos;
-
+  float rotation_progress = 0.f;
   int guard_zone;
-  std::array<int,3> guard_zones = {890, 215, 233}; 
+  int current_investigate_corner = 0;
+  std::array<int,3> guard_zones = {890, 215, 311}; 
+  std::array<std::vector<int>,3> investigate_zones = {{{933,1196,962,682,689}, // zone 0 corners
+    {102,343,282,122,91}, // zone 1 corners 
+    {117,397,717,587,147}}}; // zone 2 corners
+
   void setup_guard_zones(Arena& arena);
   void fill_zone(int start_node, int zone, Arena& arena);
-
   void update(Arena& arena, Player& player, float dt, std::vector<Bullet>& bullets);
   MovementState follow_path(float dt, Arena& arena);
   void replan(Arena& arena, Vec2 goal_pos);

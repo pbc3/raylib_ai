@@ -2,7 +2,6 @@
 #include <algorithm>
 
 int heuristic(int start, int target, int cols){
-  // return rhs.distance(lhs);return 0;
   // manhattan distance = | x1 - x2 | + |y1 - y2|
   int row1 = start / cols;
   int col1 = start % cols;
@@ -24,9 +23,6 @@ std::vector<int> build_path(std::vector<int> &parents, int node) {
 };
 
 std::vector<std::pair<int, int>> neighbours(Arena& arena, int tile) {
-  // octile..?
-  // diagonal cost = 1.414
-  // cardinal cost = 1
   std::vector<std::pair<int, int>> neighbour_tiles;
   
   auto [row,col] = arena.tile_to_row_col(tile);
@@ -143,18 +139,21 @@ std::vector<int> neighbours_unweighted(Arena& arena, int tile) {
  std::vector<int> neighbour_tiles;
 
   auto [row,col] = arena.tile_to_row_col(tile);
-
-  if(!arena.isWall(row+1,col)){
-    neighbour_tiles.push_back({arena.flatten(row+1,col)});
+  int tile1 = arena.flatten(row+1,col);
+  int tile2 = arena.flatten(row-1,col);
+  int tile3 = arena.flatten(row,col+1);
+  int tile4 = arena.flatten(row,col-1);
+  if(!arena.isWalkable(tile1)){
+    neighbour_tiles.push_back(tile1);
   }
-  if(!arena.isWall(row-1,col)){
-  neighbour_tiles.push_back({arena.flatten(row-1,col)});
+  if(arena.isWalkable(tile2)){
+  neighbour_tiles.push_back(tile2);
   }
-  if(!arena.isWall(row,col-1)){
-  neighbour_tiles.push_back({arena.flatten(row,col-1)});
+  if(!arena.isWalkable(tile3)){
+  neighbour_tiles.push_back(tile3);
   }
-  if(!arena.isWall(row,col+1)){
-  neighbour_tiles.push_back({arena.flatten(row,col+1)});
+  if(!arena.isWalkable(tile4)){
+  neighbour_tiles.push_back(tile4);
   }
 
   return neighbour_tiles;

@@ -24,14 +24,7 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 // tile centring, possibly needed.
 // constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
 // constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
-const char* PATROL_STRING = "PATROL";
-const char* CHASE_STRING = "CHASE";
-const char* ENGAGE_STRING = "ENGAGE";
-const char* COVER_STRING = "COVER";
-const char* HEAL_STRING = "HEALING";
-const char* GUARD_STRING = "GUARD";
-const char* INVESTIGATE_STRING = "INVESTIGATE";
-const char* FLEE_STRING = "FLEE";
+
 
   
 std::vector<Color> colours{WHITE,RED};
@@ -325,39 +318,22 @@ DrawLineV(
  DrawTriangleFan(points.data(), (int)points.size(), Fade(YELLOW, 0.3f));
  DrawTriangleStrip(points.data(), (int)points.size(), Fade(YELLOW, 0.3f));
 }
+constexpr const char* ENEMY_STATE_STRINGS[] = {
+    "PATROL",
+    "CHASE",
+    "TAKE COVER",
+    "HEAL",
+    "ENGAGE",
+    "GUARD",
+    "INVESTIGATE",
+    "FLEE",
+    "RETURN TO POST"
+};
 
 const char* get_state(EnemyState state){
-  switch(state){
-    case EnemyState::PATROL: {
-      return PATROL_STRING;
-    }
-    case EnemyState::CHASE: {
-      return CHASE_STRING;
-    }
-    case EnemyState::ENGAGE: {
-      return ENGAGE_STRING;
-    }
-    case EnemyState::TAKE_COVER:{
-      return COVER_STRING;
-    }
-    case EnemyState::HEAL:{
-      return HEAL_STRING;
-    }
-    case EnemyState::FLEE:{
-      return FLEE_STRING;
-    }
-    case EnemyState::GUARD:{
-      return GUARD_STRING;
-    }
-    case EnemyState::INVESTIGATE:{
-      return INVESTIGATE_STRING;
-    }
-    default:
-    {
-      return "UNKNOWN";
-    }
-  }
+  return ENEMY_STATE_STRINGS[std::bit_cast<int>(state)];
 };
+
 void draw_artefacts(Arena& arena, std::vector<Artefact>& artefact_tiles){
       for(Artefact artefact_tile : artefact_tiles){
         Vec2 world_loc = (artefact_tile.world_pos);
@@ -419,6 +395,8 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
     player.world_pos = {550,150};
     player.velocity = {550, 550};
     player.size = 25.f;
+    player.health = 100.f;
+    player.team = Team::PLAYER;
 
     std::vector<Enemy> enemies;
     // todo - factor into a spawn enemy function, then factor that all into a setup_game() including the enemy, initial path, and the spawning of the
