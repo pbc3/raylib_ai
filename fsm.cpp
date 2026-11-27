@@ -185,6 +185,7 @@ bool can_engage = agent.perceptions.spotted_player && agent.perceptions.in_range
             break;
         }
        case EnemyState::FLEE:{
+
         MovementState res = agent.follow_path(dt,arena);
         if(res == MovementState::ARRIVED){
             change_state(agent,arena,EnemyState::HEAL,player);
@@ -192,10 +193,10 @@ bool can_engage = agent.perceptions.spotted_player && agent.perceptions.in_range
         break;
        }
        case EnemyState::RETURN_TO_POST:{
-                if(can_engage){
-                    change_state(agent,arena,EnemyState::ENGAGE,player);
-                    return;
-            }
+            //     if(can_engage){
+            //         change_state(agent,arena,EnemyState::ENGAGE,player);
+            //         return;
+            // }
         MovementState res = agent.follow_path(dt,arena);
         if(res == MovementState::ARRIVED){
             change_state(agent,arena,EnemyState::GUARD,player);
@@ -223,14 +224,14 @@ bool can_engage = agent.perceptions.spotted_player && agent.perceptions.in_range
 
         case EnemyState::HEAL:{
             // if no longer providing cover
-            if(agent.perceptions.spotted_player){
+            if(can_engage){
                 change_state(agent,arena,EnemyState::FLEE, player);
             }
             if(agent.health > 80){
                 change_state(agent, arena, EnemyState::RETURN_TO_POST,player);
                 return;
             }
-            agent.health += agent.health * dt;
+            agent.health += heal_rate * dt;
             heal_timer += dt;
             break;
         }
@@ -265,10 +266,8 @@ void EnemyStateMachine::on_enter(Enemy& agent, Arena& arena, Player& player){
             break;
             }
             case EnemyState::FLEE:{
-                std::cout << agent.guard_zone << "\n";
-                int flee_idx = (agent.guard_zone + 1) % 3;
-                std::cout << flee_idx;
-                int flee_tile = agent.guard_zones[flee_idx];
+                int flee_idx = (++agent.current_flee_zone) % 3;
+                int flee_tile = agent.flee_zones[flee_idx];
                 Vec2 flee_spot = arena.tile_to_world(flee_tile);
                 agent.replan(arena,flee_spot);
                 break;

@@ -368,6 +368,7 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
     enemy.perceptions.spotted_player = false;
     enemy.forward = {1.0f,0.f};
     enemy.type = EnemyType::GUARD;
+    enemy.current_flee_zone = enemy.guard_zone + 1;
     // enemy.setup_patrol_paths(arena);
     enemy.fsm.state = EnemyState::GUARD;
     enemy.fsm.on_enter(enemy, arena,player);

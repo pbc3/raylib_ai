@@ -57,7 +57,9 @@ struct Enemy : public Entity{
   float rotation_progress = 0.f;
   int guard_zone;
   int current_investigate_corner = 0;
+  int current_flee_zone;
   std::array<int,3> guard_zones = {890, 215, 311}; 
+  std::array<int,3> flee_zones = {892, 217, 313}; 
   std::array<std::vector<int>,3> investigate_zones = {{{933,1196,962,682,689}, // zone 0 corners
     {102,343,282,122,91}, // zone 1 corners 
     {117,397,717,587,147,591}}}; // zone 2 corners

@@ -21,11 +21,12 @@ enum class EnemyState{
 };
 
 struct EnemyStateMachine {
-	std::vector<int> cover_positions = {523,1208,1294,944,1295,1189}; //  pre defined
+	std::vector<int> cover_positions = {523,1208,1294,944,1295,1189}; 
 	float cover_threshold = 41.f;
     float rotation_speed = 1.0f;
 	float heal_timer = 0.f;
 	float replan_timer = 0.f;
+	float heal_rate = 20.0f;
 	float hp_per_sec = 5.0f;
 	EnemyState state = EnemyState::PATROL;
 	void update_enemy_A(Enemy& agent, float dt, Arena& arena, Player& player, std::vector<Bullet>& bullets);
