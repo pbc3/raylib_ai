@@ -28,20 +28,25 @@ std::vector<std::pair<int, int>> neighbours(Arena& arena, int tile) {
   // diagonal cost = 1.414
   // cardinal cost = 1
   std::vector<std::pair<int, int>> neighbour_tiles;
-
+  
   auto [row,col] = arena.tile_to_row_col(tile);
+  int tile1 = arena.flatten(row+1,col);
+  int tile2 = arena.flatten(row-1,col);
+  int tile3 = arena.flatten(row,col+1);
+  int tile4 = arena.flatten(row,col-1);
+
   // update cost based on ter1in type
-  if(!arena.isWall(row+1,col)){
-    neighbour_tiles.push_back({arena.terrain_cost(row,col),arena.flatten(row+1,col)});
+  if(arena.isWalkable(tile1)){
+    neighbour_tiles.push_back({arena.terrain_cost(row,col),tile1});
   }
-  if(!arena.isWall(row-1,col)){
-  neighbour_tiles.push_back({arena.terrain_cost(row,col),arena.flatten(row-1,col)});
+  if(arena.isWalkable(tile2)){
+  neighbour_tiles.push_back({arena.terrain_cost(row,col),tile2});
   }
-  if(!arena.isWall(row,col-1)){
-  neighbour_tiles.push_back({arena.terrain_cost(row,col),arena.flatten(row,col-1)});
+  if(arena.isWalkable(tile3)){
+  neighbour_tiles.push_back({arena.terrain_cost(row,col),tile3});
   }
-  if(!arena.isWall(row,col+1)){
-  neighbour_tiles.push_back({arena.terrain_cost(row,col),arena.flatten(row,col+1)});
+  if(arena.isWalkable(tile4)){
+  neighbour_tiles.push_back({arena.terrain_cost(row,col),tile4});
   }
 
   return neighbour_tiles;

@@ -35,6 +35,9 @@ struct Arena {
   bool isWater(int tile);
   bool isObstacle(int tile);
   bool isDoor(int tile_);
+  bool isWalkable(int tile);
+
+
 
   int flatten(int row, int col);
   int vec2_to_tile(Vec2 world_pos);

@@ -124,7 +124,12 @@ bool Arena::isObstacle(int tile_){
   int tile_val = tile(row, col);
   return tile_val == 4 ? true : false;
 }
-
+bool Arena::isWalkable(int tile){
+if(isWall(tile) || isObstacle(tile) || out_of_bounds(*this,tile_to_world(tile))){
+      return false;
+    }
+    return true;
+}
 int Arena::tile(int r, int c) {
   if (r >= rows || r < 0 || c >= cols || c < 0) {
     //__debugbreak();
