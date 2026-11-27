@@ -1,13 +1,13 @@
 #include "artefacts.h"
 
 
-std::array<ArtefactSet,6> generate_artefacts(Arena& arena, Player& player){
+std::array<ArtefactSet,6> generate_artefacts(Arena& arena, Player& player,std::vector<Enemy>& enemies){
     std::array<const char*, 6> texture_names = {"assets/diamond.png", "assets/potion.png", "assets/skull.png", "assets/stave.png", "assets/book.png", "assets/scroll.png"};
     std::array<ArtefactSet,6> artefact_sets;
 
 
     // first - generate locations
-   auto locations = generate_artefact_locations(arena, player);
+   auto locations = generate_artefact_locations(arena, player,enemies);
 
     // setup sets for each type of artefact
     int outer_idx = 0;
@@ -26,7 +26,7 @@ std::array<ArtefactSet,6> generate_artefacts(Arena& arena, Player& player){
     return artefact_sets;
 }
 
-std::vector<Vec2> generate_artefact_locations(Arena& arena, Player& player){
+std::vector<Vec2> generate_artefact_locations(Arena& arena, Player& player, std::vector<Enemy>& enemies){
     std::vector<Vec2> locations;
        while(locations.size() < 18){
         Vec2 candidate = arena.random_pos();
@@ -51,6 +51,22 @@ std::vector<Vec2> generate_artefact_locations(Arena& arena, Player& player){
 
         // dont spawn a artefact next to walls
         if(neighbours_contain_obstacles(arena, tile)){
+            continue;
+        }
+
+        // dont spawn within a distance of the players spawn
+        Vec2 to_player = player.world_pos - candidate;
+        if(to_player.length() < 128.f){
+            continue;
+        } 
+        // dont spawn on a enemy
+        for(const Enemy& enemy : enemies){
+            if(candidate.distance(enemy.world_pos) < 128.f){
+                safe_loc = false;
+               break;
+            }
+        }
+        if(!safe_loc){
             continue;
         }
 

@@ -3,9 +3,8 @@
 #include "arena.h"
 #include "math_utils.h"
 #include "player.h"
+#include "enemy.h"
 #include "pathfinding.h"
-
-
 
 struct Artefact{
     Vec2 world_pos;
@@ -17,6 +16,6 @@ struct ArtefactSet{
     std::array<Artefact,3> artefacts;
 };
 
-std::array<ArtefactSet,6> generate_artefacts(Arena& arena, Player& player);
-std::vector<Vec2> generate_artefact_locations(Arena& arena, Player& player);
+std::array<ArtefactSet,6> generate_artefacts(Arena& arena, Player& player,std::vector<Enemy>& enemies);
+std::vector<Vec2> generate_artefact_locations(Arena& arena, Player& player, std::vector<Enemy>& enemies);
 bool neighbours_contain_obstacles(Arena& arena, int tile);

@@ -34,20 +34,12 @@ std::vector<int> parse_ints_from_line(std::string_view line) {
   }
   return vals;
 };
-std::optional<std::vector<std::vector<int>>>
-parse_csv(const std::string &path) {
+std::optional<std::vector<std::vector<int>>> parse_csv(const std::string &path) {
   std::ifstream file(path);
   if (!file.is_open()) {
     return std::nullopt;
   }
-
   std::vector<std::vector<int>> grid;
-
-  // std::string total;
-  ////while (std::getline(file, line)) {
-
-  ////	total += line + "\n";
-  ////}
 
   int row_idx = 0;
   std::string line;

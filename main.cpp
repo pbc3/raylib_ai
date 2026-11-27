@@ -184,11 +184,10 @@ for (int i = 0; i < arena.tile_to_zone.size(); i++)
 }
 }
 
-void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies,  std::vector<Bullet>& bullets, input_state input) {
+void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies,  std::vector<Bullet>& bullets, input_state input, std::array<ArtefactSet,6>& artefact_sets) {
   // ideally, reduce this to contained function calls. enemy.update(dt);player.update(dt);bullet.update(dt);
     // todo - movement needs more work. what if the player can touch more than 4
     // tiles at once?
-
     // player update
         // intended movement
       Vec2 candidate{};
@@ -295,6 +294,15 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
       });
   
 
+      // artefact collection
+      for(ArtefactSet& af_set : artefact_sets){
+        for(Artefact& af : af_set.artefacts){
+          if(player.world_pos.distance(af.world_pos) < 25.f){
+            af.collected = true;
+          }
+        }
+      }
+
     }
   }
 
@@ -338,10 +346,14 @@ const char* get_state(EnemyState state){
   return ENEMY_STATE_STRINGS[std::bit_cast<int>(state)];
 };
 
-void draw_artefacts(Arena& arena, std::array<ArtefactSet,6>& artefact_sets){
-  for(auto af_set : artefact_sets){
+void draw_artefacts(std::array<ArtefactSet,6>& artefact_sets){
+  for(const auto& af_set : artefact_sets){
     for(int i = 0; i < 3; i++){
-      Vec2 pos = af_set.artefacts[i].world_pos;
+      const Artefact& af = af_set.artefacts[i];
+      if(af.collected){
+        continue;
+      }
+      Vec2 pos = af.world_pos;
       Vec2 top_left = centre_to_top_left(pos,32.f);
       DrawTexture(af_set.tex,top_left.x,top_left.y,WHITE);
     }
@@ -423,9 +435,8 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
     spawn_enemy_B(enemies,arena,player);
 
     // setup artefacts
-    auto artefact_tiles = generate_artefacts(arena,player);
-
-
+    std::array<ArtefactSet,6> artefact_tiles = generate_artefacts(arena,player,enemies);
+    
     auto cur_time = std::chrono::steady_clock::now();
     enemies[0].last_shot_at = cur_time;
 
@@ -461,7 +472,7 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
 
       float dt = GetFrameTime();
       input_state input = handle_input(camera, player);
-      update(arena, dt, player, enemies,bullets, input);
+      update(arena, dt, player, enemies,bullets, input,artefact_tiles);
 
       //render
       BeginDrawing();
@@ -471,10 +482,10 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
       
       //  todo - stop drawing the grid every frame, draw it once into a texture,
       DrawTexture(tex, 0, 0, {WHITE});
-TraceLog(LOG_INFO, "Texture: %dx%d",
+      TraceLog(LOG_INFO, "Texture: %dx%d",
     tex.width, tex.height);
       draw_grid(arena);
-      draw_artefacts(arena,artefact_tiles);
+      draw_artefacts(artefact_tiles);
       for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, b.size, BLACK);}
       Vec2 player_top_left = player.world_pos - Vec2{player.size / 2, player.size / 2};
        DrawRectangleV(*reinterpret_cast<Vector2 *>(&player_top_left),{player.size, player.size}, BLUE);
