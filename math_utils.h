@@ -54,7 +54,10 @@ struct Vec2 {
     return *this;
   }
   Vec2 operator*(float scalar) { return {x * scalar, y * scalar}; }
-
+  Vec2 &operator/=(float scalar) {
+    x/= 2; y/=2;
+    return *this;
+  }
   Vec2 &operator+=(Vec2 rhs) {
     this->x += rhs.x;
     this->y += rhs.y;

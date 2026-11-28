@@ -29,7 +29,6 @@ struct Renderer {
   void load_textures(const char *arena_path, const char *door_path) {
     arena = LoadTexture(arena_path);
     closed_door = LoadTexture(door_path);
-
     SetTextureFilter(arena, TEXTURE_FILTER_BILINEAR);
     SetTextureFilter(closed_door, TEXTURE_FILTER_BILINEAR);
   }

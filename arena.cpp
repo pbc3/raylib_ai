@@ -58,8 +58,7 @@ Arena::Arena(const std::string &csv_path) {
 
   grid = std::move(res.value());
   int r = grid.size();
-  int c = grid[r - 1].size(); // assume size is even across all  rows..
-  //
+  int c = grid[r - 1].size(); // assuming size is even
   cols = c;
   rows = r;
   map_height = rows * TILE_SIZE;

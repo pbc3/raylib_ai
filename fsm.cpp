@@ -52,14 +52,22 @@ void EnemyStateMachine::update_enemy_A(Enemy &agent, float dt, Arena &arena,
       }
     }
     MovementState chase_result = agent.follow_path(dt, arena);
-    if ((chase_result == MovementState::ARRIVED ||
-         chase_result == MovementState::BLOCKED ||
-         chase_result == MovementState::NO_PATH) &&
-        !agent.perceptions.spotted_player) {
+    if (chase_result == MovementState::ARRIVED &&
+        !agent.perceptions.spotted_player){
       // possibly rotate fov 360 to  "observe" once its arrived
       // this currently makes it twitch backwards...
       change_state(agent, arena, EnemyState::PATROL, player);
     }
+    if( chase_result == MovementState::BLOCKED || chase_result == MovementState::NO_PATH){
+          if(replan_timer < 3.0f){
+            replan_timer+=dt;
+          }
+          else{
+            agent.replan(arena, agent.perceptions.last_seen_player);
+            replan_timer = 0.f;
+          }
+      }
+    
     break;
   }
 
@@ -264,7 +272,11 @@ void EnemyStateMachine::on_enter(Enemy &agent, Arena &arena, Player &player) {
     agent.replan(arena, cover_spot);
     break;
   }
+  case EnemyState::HEAL:{
+     agent.velocity /= 2;
+  }
   case EnemyState::FLEE: {
+    agent.velocity *= 2;
     agent.current_flee_zone =
         (agent.current_flee_zone + 1) % agent.flee_zones.size();
     int flee_tile = agent.flee_zones[agent.current_flee_zone];

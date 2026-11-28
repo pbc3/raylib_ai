@@ -24,13 +24,13 @@ constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE;   // screen x / tile
 constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
 
 int main() {
-  SetTargetFPS(144);
+
   const auto csv =
       std::filesystem::path(GetApplicationDirectory()) / "assets" / "arena.csv";
   Arena arena(csv.string());
-
+SetConfigFlags(FLAG_VSYNC_HINT);
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
-  SetTargetFPS(144);
+//   SetTargetFPS(144);
   // gameplay setup
   GameLevel level{.arena = arena};
   level.restart_level();

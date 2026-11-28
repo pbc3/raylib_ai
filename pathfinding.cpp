@@ -57,7 +57,7 @@ std::vector<int> astar(Arena &arena, int start_node, int target_node) {
       fringe;
 
   std::vector<int> parents(arena.rows * arena.cols, -1);
-  std::unordered_map<int, int> cost_so_far;
+  std::vector<int> cost_so_far(arena.cols*arena.rows,std::numeric_limits<int>::max());
 
   fringe.push({heuristic(start_node, target_node, arena.cols), start_node});
   parents[start_node] = -1;
@@ -78,15 +78,8 @@ std::vector<int> astar(Arena &arena, int start_node, int target_node) {
     }
 
     for (auto [edge_cost, candidate] : neighbours(arena, node)) {
-      auto [row, col] = arena.tile_to_row_col(candidate);
-      // if(arena.isWall(row,col)){
-      //   continue;
-      // }
-
-      int new_cost = edge_cost + cost_so_far.at(node); // g(n);
-
-      auto it = cost_so_far.find(candidate);
-      if (it == cost_so_far.end() || new_cost < it->second) {
+      int new_cost = edge_cost + cost_so_far[node]; // g(n);
+      if (new_cost < cost_so_far[candidate]) {
         cost_so_far[candidate] = new_cost;
         parents[candidate] = node;
         int new_priority =
@@ -106,11 +99,12 @@ std::vector<int> dijkstra(Arena &arena, int start_node, int target_node) {
       fringe;
 
   std::vector<int> parents(arena.rows * arena.cols, -1);
-  std::unordered_map<int, int> cost_so_far;
-
+  std::vector<int> cost_so_far(arena.cols*arena.rows,std::numeric_limits<int>::max());
+  cost_so_far.reserve(arena.cols * arena.rows);
   fringe.push({0, start_node});
   parents[start_node] = -1;
   cost_so_far[start_node] = 0;
+
 
   while (!fringe.empty()) {
     auto [priority, node] = fringe.top();
@@ -127,14 +121,10 @@ std::vector<int> dijkstra(Arena &arena, int start_node, int target_node) {
 
     for (auto [edge_cost, candidate] : neighbours(arena, node)) {
       auto [row, col] = arena.tile_to_row_col(candidate);
-      // if(arena.isWall(row,col)){
-      //   continue;
-      // }
 
-      int new_cost = edge_cost + cost_so_far.at(node); // g(n);
+      int new_cost = edge_cost + cost_so_far[node]; // g(n);
 
-      auto it = cost_so_far.find(candidate);
-      if (it == cost_so_far.end() || new_cost < it->second) {
+      if (new_cost < cost_so_far[candidate]) {
         cost_so_far[candidate] = new_cost;
         parents[candidate] = node;
         int new_priority = new_cost; // total cost = g(n)
