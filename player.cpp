@@ -14,7 +14,7 @@ float& Player::take_damage(float base_dmg) {
         base_dmg += GetRandomValue(1, 8);
         last_dmg = base_dmg;
     } else {
-        crit_hit = true;
+        crit_hit = false;
     }
 
     health = std::max(0.f, health - base_dmg);

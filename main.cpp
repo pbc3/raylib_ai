@@ -25,12 +25,6 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 // constexpr int OFFSET_X = (SCREEN_WIDTH - ARENA_WIDTH * TILE_SIZE) / 2;
 // constexpr int OFFSET_Y = (SCREEN_HEIGHT - ARENA_HEIGHT * TILE_SIZE) / 2;
 
-Vec2 centre_to_top_left(Vec2 centre_coords, float size) {
-    float half_s = size / 2;
-    float x = centre_coords.x - half_s;
-    float y = centre_coords.y - half_s;
-    return {x, y};
-};
 
 std::vector<Color> colours{WHITE, RED};
 
@@ -220,7 +214,7 @@ void update(Arena& arena, float dt, Player& player, std::vector<Enemy>& enemies,
         spawn_bullet(bullets, player.world_pos, input.mouse_dir, Team::PLAYER);
     }
     if (input.interract) {
-        arena.close_door(arena.vec2_to_tile(player.world_pos), closed_door_tiles);
+        arena.close_door(player.world_pos,player.size,closed_door_tiles,enemies);
     }
     update_bullets(arena, bullets, player, enemies, dt);
     remove_dead_entities(bullets, enemies);
@@ -269,15 +263,16 @@ void draw_artefacts(std::array<ArtefactSet, 6>& artefact_sets) {
     }
 };
 
+
 void spawn_enemy_A(std::vector<Enemy>& enemies, Arena& arena, Player& player) {
-    Vec2 random_spawn = player.world_pos;
+    Vec2 random_spawn = arena.random_pos();
     while(random_spawn.distance(player.world_pos) < 128.f){
       random_spawn = arena.random_pos();
     }
     Enemy enemy{};
     enemy.world_pos = random_spawn;
-    enemy.velocity = {350, 350};
-    enemy.size = 30.f;
+    enemy.velocity = {210, 210};
+    enemy.size = 26.f;
     enemy.dead = false;
     enemy.health = 100;
     enemy.perceptions.spotted_player = false;
@@ -292,8 +287,8 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player) {
         Enemy enemy{};
         enemy.guard_zone = i;
         enemy.world_pos = arena.tile_to_world(enemy.guard_zones[enemy.guard_zone]);
-        enemy.velocity = {350, 350};
-        enemy.size = 30.f;
+        enemy.velocity = {160,160};
+        enemy.size = 26.f;
         enemy.dead = false;
         enemy.health = 100;
         enemy.perceptions.spotted_player = false;
@@ -345,6 +340,17 @@ void render(){
 
 };
 
+void draw_health_bars(Enemy& enemy){
+  static float width = 40.f;
+  static float height = 6.f;
+  float x = enemy.world_pos.x - width / 2;
+  float y = enemy.world_pos.y - enemy.size / 2 - 12.f;
+  float health_fill = std::clamp(enemy.health / 100.f, 0.f,1.f);
+  DrawRectangleRec({x, y, width, height}, DARKGRAY);
+  DrawRectangleRec({x, y, width * health_fill, height}, GREEN);
+  DrawRectangleLines(x, y, width, height, BLACK);
+}
+
 int main() {
     SetTargetFPS(120);
     // get path realtive to build-dir
@@ -358,8 +364,8 @@ int main() {
     // gameplay setup
     Player player{};
     player.world_pos = {50, 150};
-    player.velocity = {550, 550};
-    player.size = 25.f;
+    player.velocity = {280, 280};
+    player.size = 24.f;
     player.health = 1000.f;
     player.team = Team::PLAYER;
 
@@ -434,11 +440,10 @@ int main() {
                        BLUE);
         for (int i = 0; i < enemies.size(); i++) {
             auto& enemy = enemies[i];
+             draw_health_bars(enemy);
             Vec2 enemy_top_left = enemy.world_pos - Vec2{enemy.size / 2, enemy.size / 2};
             DrawRectangleV(*reinterpret_cast<Vector2*>(&enemy_top_left), {enemy.size, enemy.size},
                            colours[(i + 1) % colours.size()]);
-            DrawText(TextFormat("%i", (int)enemy.health), enemy.world_pos.x + enemy.size / 2,
-                     enemy.world_pos.y - 50, 40, GREEN);
             DrawText(TextFormat("%s", get_state(enemy.fsm.state)),
                      enemy.world_pos.x + enemy.size / 2, enemy.world_pos.y - 10, 40, GREEN);
         }
@@ -450,6 +455,7 @@ int main() {
             draw_grid(arena);
             for (Enemy& enemy : enemies) {
                 draw_fov_cone(enemy, arena);
+               
                 for (auto waypoint_pos : enemy.cur_path) {
                     DrawCircle(waypoint_pos.x, waypoint_pos.y, 2.2, RED);
                 }

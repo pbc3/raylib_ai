@@ -91,7 +91,9 @@ void EnemyStateMachine::update_enemy_A(Enemy& agent, float dt, Arena& arena, Pla
         MovementState move_res = agent.follow_path(dt, arena);
         if (move_res == MovementState::ARRIVED) {
             if (agent.perceptions.spotted_player) {
-                find_cover(arena, agent, player); // try again
+                Vec2 new_cover = find_cover(arena, agent, player); // try again
+                agent.replan(arena,new_cover);
+                break;
             }
             change_state(agent, arena, EnemyState::HEAL, player);
         }
@@ -184,6 +186,10 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
         if (res == MovementState::ARRIVED) {
             change_state(agent, arena, EnemyState::HEAL, player);
         }
+        if(res == MovementState::BLOCKED || res == MovementState::NO_PATH){
+            agent.current_flee_zone = (agent.current_flee_zone + 1) % 3;
+            on_enter(agent,arena,player);
+        }
         break;
     }
     case EnemyState::RETURN_TO_POST: {
@@ -192,7 +198,16 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
         //         return;
         // }
         MovementState res = agent.follow_path(dt, arena);
-        if(res == MovementState::BLOCKED || res == MovementState::NO_PATH){
+        if(res == MovementState::NO_PATH){
+            if(replan_timer < 5.0f){
+                replan_timer+=dt;
+            }
+            else{
+                agent.replan(arena,agent.current_goal_pos);
+                replan_timer = 0.0f;
+            }
+        }
+        if(res == MovementState::BLOCKED){
             on_enter(agent,arena,player); // if the door becomes closed off, replan again a new route.
         }
         if (res == MovementState::ARRIVED) {

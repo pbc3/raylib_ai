@@ -2,6 +2,7 @@
 #include <array>
 #include <exception>
 #include <stdexcept>
+#include "enemy.h"
 
 bool out_of_bounds(Arena& arena, Vec2 requested_pos) {
     if (requested_pos.y > arena.map_height || requested_pos.x > arena.map_width ||
@@ -195,11 +196,34 @@ int Arena::vec2_to_tile(Vec2 world_pos) {
     return flatten(row, col);
 }
 
-void Arena::close_door(int player_tile, std::vector<int>& closed_door_tiles) {
+bool overlaps(Vec2 door, Vec2 pos, float size){
+  pos = centre_to_top_left(pos,size);
+  Rectangle entity_rect = {pos.x,pos.y,size,size};
+  door = centre_to_top_left(door,32);
+  Rectangle door_rect = {door.x,door.y,32.f,32.f};
+  return CheckCollisionRecs(entity_rect,door_rect);
+}
+
+void Arena::close_door(Vec2 player_pos, float player_size, std::vector<int>& closed_door_tiles,std::vector<Enemy>& enemies) {
+    int player_tile = vec2_to_tile(player_pos);
     auto [row, col] = tile_to_row_col(player_tile);
     std::vector<int> tiles = {flatten(row + 1, col), flatten(row - 1, col), flatten(row, col + 1),
                               flatten(row, col - 1)};
     for (int i = 0; i <= 3; i++) {
+        // prevent player & enemy being stuck in door
+        Vec2 door_pos = tile_to_world(tiles[i]);
+        bool occupied = false;
+          if (overlaps(door_pos, player_pos, player_size)) {
+            occupied = true;
+        }
+        for(const Enemy& enemy : enemies){
+          int enemy_tile = vec2_to_tile(enemy.world_pos);
+          if(overlaps(door_pos,enemy.world_pos,enemy.size))
+          occupied = true;
+        }
+        if(occupied){
+          continue;
+        }
         if (isClosedDoor(tiles[i])) {
             auto [r, c] = tile_to_row_col(tiles[i]);
             grid[r][c] = 3;

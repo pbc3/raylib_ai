@@ -62,6 +62,14 @@ struct Vec2 {
     }
 };
 
+inline Vec2 centre_to_top_left(Vec2 centre_coords, float size) {
+    float half_s = size / 2;
+    float x = centre_coords.x - half_s;
+    float y = centre_coords.y - half_s;
+    return {x, y};
+};
+
+
 struct Ray_ {
     Vec2 origin;
     Vec2 direction;

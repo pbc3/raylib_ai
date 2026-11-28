@@ -152,16 +152,16 @@ std::vector<int> neighbours_unweighted(Arena& arena, int tile) {
     int tile2 = arena.flatten(row - 1, col);
     int tile3 = arena.flatten(row, col + 1);
     int tile4 = arena.flatten(row, col - 1);
-    if (!arena.isWalkable(tile1)) {
+    if (arena.isWalkable(tile1)) {
         neighbour_tiles.push_back(tile1);
     }
     if (arena.isWalkable(tile2)) {
         neighbour_tiles.push_back(tile2);
     }
-    if (!arena.isWalkable(tile3)) {
+    if (arena.isWalkable(tile3)) {
         neighbour_tiles.push_back(tile3);
     }
-    if (!arena.isWalkable(tile4)) {
+    if (arena.isWalkable(tile4)) {
         neighbour_tiles.push_back(tile4);
     }
 

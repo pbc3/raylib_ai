@@ -6,6 +6,10 @@
 #include <exception>
 #include <random>
 #include <stdexcept>
+#include "raylib.h"
+
+
+struct Enemy;
 
 constexpr int TILE_SIZE = 32;
 const float BULLET_DAMAGE = 20.f;
@@ -41,7 +45,7 @@ struct Arena {
     bool isDoor(int tile_);
     bool isWalkable(int tile);
     bool isSuitableArtefact(int tile);
-    void close_door(int player_tile, std::vector<int>& open_door_tiles);
+    void close_door(Vec2 player_pos, float player_size, std::vector<int>& closed_door_tiles,std::vector<Enemy>& enemies);
 
     int flatten(int row, int col);
     int vec2_to_tile(Vec2 world_pos);

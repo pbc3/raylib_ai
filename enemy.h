@@ -20,8 +20,8 @@ struct Perceptions {
     bool obstructed_los;
     bool in_zone;
     bool in_range;
-    float view_angle_rads = 1.5708f; // 90* in radians
-    float max_distance = 350.f;
+    float view_angle_rads = 2.0944f; // 90* in radians
+    float max_distance = 650.f;
     void update(Enemy* agent, Arena& arena, Player& player);
 };
 
