@@ -234,11 +234,12 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player) {
         enemy.velocity = {160,160};
         enemy.size = 26.f;
         enemy.dead = false;
+        enemy.perceptions.engage_range = GetRandomValue(100, 220);
         enemy.health = 100;
         enemy.perceptions.spotted_player = false;
         enemy.forward = {1.0f, 0.f};
         enemy.type = EnemyType::GUARD;
-        enemy.current_flee_zone = enemy.guard_zone + 1;
+        enemy.current_flee_zone = enemy.guard_zone;
         // enemy.setup_patrol_paths(arena);
         enemy.fsm.state = EnemyState::GUARD;
         enemy.fsm.on_enter(enemy, arena, player);
@@ -317,9 +318,15 @@ constexpr const char* ENEMY_STATE_STRINGS[] = {"PATROL",      "CHASE",  "TAKE CO
                                                "HEAL",        "ENGAGE", "GUARD",
                                                "INVESTIGATE", "FLEE",   "RETURN TO POST"};
 
+constexpr Color ENEMY_STATE_COLOURS[] = {YELLOW, ORANGE, SKYBLUE,GREEN,RED,YELLOW,GOLD,PURPLE,SKYBLUE};                                        
+                                               
+
 const char* get_state(EnemyState state) {
     return ENEMY_STATE_STRINGS[std::bit_cast<int>(state)];
 };
+Color get_colour(EnemyState state){
+ return ENEMY_STATE_COLOURS[(int)state];
+}
 
 void draw_artefacts(std::array<ArtefactSet, 6>& artefact_sets) {
     for (const auto& af_set : artefact_sets) {
@@ -376,6 +383,8 @@ void render(){
 
 };
 
+
+
 void draw_health_bars(Enemy& enemy){
   static float width = 40.f;
   static float height = 6.f;
@@ -385,6 +394,22 @@ void draw_health_bars(Enemy& enemy){
   DrawRectangleRec({x, y, width, height}, DARKGRAY);
   DrawRectangleRec({x, y, width * health_fill, height}, GREEN);
   DrawRectangleLines(x, y, width, height, BLACK);
+}
+
+
+void draw_enemy_info(Enemy& enemy){
+  static float width = 40.f;
+  static float height = 6.f;
+  float x = enemy.world_pos.x - width / 2;
+  float y = enemy.world_pos.y - enemy.size / 2 - 12.f;
+  float health_fill = std::clamp(enemy.health / 100.f, 0.f,1.f);
+  DrawRectangleRec({x, y, width, height}, DARKGRAY);
+  DrawRectangleRec({x, y, width * health_fill, height}, GREEN);
+  DrawRectangleLines(x, y, width, height, BLACK);
+  const char* state = get_state(enemy.fsm.state);
+  Color state_colour = get_colour(enemy.fsm.state);
+  DrawText(TextFormat("%s ",state),x, y - 20, 20, state_colour);
+  DrawText(TextFormat("ID : %i",enemy.id),x, y-40, 25, RED);
 }
 
 
@@ -458,12 +483,10 @@ int main() {
                        BLUE);
         for (int i = 0; i < level.enemies.size(); i++) {
             auto& enemy = level.enemies[i];
-            draw_health_bars(enemy);
+            draw_enemy_info(enemy);
             Vec2 enemy_top_left = centre_to_top_left(enemy.world_pos,enemy.size);
             DrawRectangleV(*reinterpret_cast<Vector2*>(&enemy_top_left), {enemy.size, enemy.size},
                            colours[(i + 1) % colours.size()]);
-            DrawText(TextFormat("%s", get_state(enemy.fsm.state)),
-                     enemy.world_pos.x + enemy.size / 2, enemy.world_pos.y - 10, 40, GREEN);
         }
         DrawRectangleLines(player_top_left.x, player_top_left.y, level.player.size, level.player.size,
                            RAYWHITE);
@@ -480,14 +503,8 @@ int main() {
             }
         }
                 DrawText(TextFormat("health:%f", level.player.health), 0, 30, 25, RED);
-        if (!level.enemies.empty()) {
-            const Enemy& e = level.enemies[0];
-            DrawText(TextFormat("STATE: %d | GOAL: %d | WP: %d/%d | SEEN: %d | RANGE: %d",
-                                static_cast<int>(e.fsm.state), e.goal_tile, e.cur_waypoint,
-                                static_cast<int>(e.cur_path.size()), e.perceptions.spotted_player,
-                                e.perceptions.in_range),
-                     10, 10, 10, GREEN);
-        }
+
+
         EndMode2D();
 
         EndDrawing();

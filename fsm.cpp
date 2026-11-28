@@ -9,16 +9,11 @@ void EnemyStateMachine::update_enemy_A(Enemy& agent, float dt, Arena& arena, Pla
     auto health_below_threshold = [&](float agent_health, float threshold) -> bool {
         return agent_health <= threshold;
     };
-
+    if (state != EnemyState::TAKE_COVER && state != EnemyState::HEAL &&
+        health_below_threshold(agent.health, cover_threshold)) {
+        change_state(agent, arena, EnemyState::TAKE_COVER, player);
+    }
     switch (state) {
-    // PATROL -> SPOTTED? - > CHASE
-    // CHASE - > IN RANGE ? -> ENGAGE
-    // CHASE -> FOLLOW PATH -> ARRIVED AT LAST SEEN -> NOONE THERE -> PATROL
-    // ENGAGE -> OUT OF RANGE? - > CHASE
-    // ALL STATES ABOVE - > HEALTH < THRESHOLD ? -> TAKE COVER
-    // TAKE->COVER - AT TARGET? -> HEAL STATE
-    // HEAL -> HEALED TO 80? -> CHECK TRANSITIONS AND SWITCH. possibly check for danger close
-    // transtions before healing?
     case EnemyState::PATROL:
         // check perceptions for transitions
         if (agent.perceptions.spotted_player) {
@@ -28,20 +23,12 @@ void EnemyStateMachine::update_enemy_A(Enemy& agent, float dt, Arena& arena, Pla
             change_state(agent, arena, EnemyState::CHASE, player);
             return;
         }
-        if (health_below_threshold(agent.health, cover_threshold)) {
-            change_state(agent, arena, EnemyState::TAKE_COVER, player);
-            return;
-        }
         // else - patrol. all patrol logic is contained in this func
         agent.patrol(arena, dt);
         break;
 
     case EnemyState::CHASE: {
         // check perceptions for transitions
-        if (health_below_threshold(agent.health, cover_threshold)) {
-            change_state(agent, arena, EnemyState::TAKE_COVER, player);
-            return;
-        }
         if (agent.perceptions.in_range && !agent.perceptions.obstructed_los) {
             change_state(agent, arena, EnemyState::ENGAGE, player);
             return;
@@ -79,10 +66,6 @@ void EnemyStateMachine::update_enemy_A(Enemy& agent, float dt, Arena& arena, Pla
             change_state(agent, arena, EnemyState::CHASE, player);
             return;
         }
-        if (health_below_threshold(agent.health, cover_threshold)) {
-            change_state(agent, arena, EnemyState::TAKE_COVER, player);
-            return;
-        }
         agent.engage_player(arena, dt, player, bullets);
         break;
     }
@@ -104,6 +87,7 @@ void EnemyStateMachine::update_enemy_A(Enemy& agent, float dt, Arena& arena, Pla
         // if no longer providing cover
         if (agent.perceptions.spotted_player) {
             change_state(agent, arena, EnemyState::TAKE_COVER, player);
+            return;
         }
         if (agent.health > 80) {
             change_state(agent, arena, EnemyState::PATROL, player);
@@ -122,13 +106,14 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
     auto health_below_threshold = [&](float agent_health, float threshold) -> bool {
         return agent_health <= threshold;
     };
-    if (state != EnemyState::FLEE && state != EnemyState::HEAL &&
-        health_below_threshold(agent.health, cover_threshold)) {
-        change_state(agent, arena, EnemyState::FLEE, player);
-    }
+
     bool can_engage = agent.perceptions.spotted_player && agent.perceptions.in_range &&
                       !agent.perceptions.obstructed_los;
 
+        if (state != EnemyState::FLEE && state != EnemyState::HEAL &&
+        health_below_threshold(agent.health, cover_threshold)) {
+        change_state(agent, arena, EnemyState::FLEE, player);
+    }
     switch (state) {
     case EnemyState::GUARD: {
 
@@ -187,7 +172,6 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
             change_state(agent, arena, EnemyState::HEAL, player);
         }
         if(res == MovementState::BLOCKED || res == MovementState::NO_PATH){
-            agent.current_flee_zone = (agent.current_flee_zone + 1) % 3;
             on_enter(agent,arena,player);
         }
         break;
@@ -237,6 +221,7 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
         // if no longer providing cover
         if (can_engage) {
             change_state(agent, arena, EnemyState::FLEE, player);
+            return;
         }
         if (agent.health > 80) {
             change_state(agent, arena, EnemyState::RETURN_TO_POST, player);
@@ -272,8 +257,8 @@ void EnemyStateMachine::on_enter(Enemy& agent, Arena& arena, Player& player) {
         break;
     }
     case EnemyState::FLEE: {
-        int flee_idx = (++agent.current_flee_zone) % 3;
-        int flee_tile = agent.flee_zones[flee_idx];
+        agent.current_flee_zone = (agent.current_flee_zone + 1) % agent.flee_zones.size();
+        int flee_tile = agent.flee_zones[agent.current_flee_zone];
         Vec2 flee_spot = arena.tile_to_world(flee_tile);
         agent.replan(arena, flee_spot);
         break;
