@@ -270,7 +270,10 @@ void draw_artefacts(std::array<ArtefactSet, 6>& artefact_sets) {
 };
 
 void spawn_enemy_A(std::vector<Enemy>& enemies, Arena& arena, Player& player) {
-    Vec2 random_spawn = arena.random_pos();
+    Vec2 random_spawn = player.world_pos;
+    while(random_spawn.distance(player.world_pos) < 128.f){
+      random_spawn = arena.random_pos();
+    }
     Enemy enemy{};
     enemy.world_pos = random_spawn;
     enemy.velocity = {350, 350};
