@@ -226,7 +226,7 @@ void update_artefacts(std::array<ArtefactSet,6>& artefact_sets, Player& player){
       }
 }
 void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies,  std::vector<Bullet>& bullets, input_state input, std::array<ArtefactSet,6>& artefact_sets, 
-  std::vector<int>& open_door_tiles) {  
+  std::vector<int>& closed_door_tiles) {  
     update_player(arena,player,input,dt);
     update_enemies(arena,bullets,player,enemies,dt);
     // spawn bullets
@@ -234,7 +234,7 @@ void update(Arena &arena, float dt, Player &player,  std::vector<Enemy>& enemies
         spawn_bullet(bullets, player.world_pos, input.mouse_dir, Team::PLAYER);
     }
     if(input.interract){
-      arena.open_door(arena.vec2_to_tile(player.world_pos), open_door_tiles);
+      arena.close_door(arena.vec2_to_tile(player.world_pos), closed_door_tiles);
     }
     update_bullets(arena,bullets,player,enemies,dt);
     remove_dead_entities(bullets,enemies);
@@ -332,7 +332,7 @@ void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player){
 }
 
 
-Texture2D open_door;
+Texture2D closed_door;
 
 void draw_player_triangle(Player& player, Vec2 mouse_dir){
 float half = player.size / 2;
@@ -356,10 +356,11 @@ DrawTriangle({tip.x,tip.y},{top.x,top.y},{bottom.x,bottom.y}, BLACK);
 }
 }
 
-void draw_open_doors(Arena& arena, std::vector<int>& open_tiles){
+void draw_closed_doors(Arena& arena, std::vector<int>& open_tiles){
   for(int open_tile : open_tiles){
     Vec2 world_pos = arena.tile_to_world(open_tile);
-    DrawTexture(open_door,world_pos.x,world_pos.y,WHITE);
+    Vec2 top_left = centre_to_top_left(world_pos,32);
+    DrawTexture(closed_door,top_left.x,top_left.y,WHITE);
   }
 }
   int main() {
@@ -403,8 +404,8 @@ void draw_open_doors(Arena& arena, std::vector<int>& open_tiles){
     camera.offset = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
 
     auto tex = LoadTexture(arena_tex.string().c_str());
-    const auto open_door_tex = std::filesystem::path(GetApplicationDirectory()) / "assets" / "door.png";
-    open_door = LoadTexture(open_door_tex.string().c_str());
+    const auto closed_door_tex = std::filesystem::path(GetApplicationDirectory()) / "assets" / "door_close.png";
+    closed_door = LoadTexture(closed_door_tex.string().c_str());
     std::vector<int> open_door_tiles;
     float draw_hit_timer = 0.0f;
     while (!WindowShouldClose()) {
@@ -434,7 +435,7 @@ void draw_open_doors(Arena& arena, std::vector<int>& open_tiles){
       //  todo - stop drawing the grid every frame, draw it once into a texture,
       DrawTexture(tex, 0, 0, {WHITE});
       draw_artefacts(artefact_tiles);
-      draw_open_doors(arena,open_door_tiles);
+      draw_closed_doors(arena,open_door_tiles);
       for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, b.size, BLACK);}
       Vec2 player_top_left = player.world_pos - Vec2{player.size / 2, player.size / 2};
 
@@ -442,7 +443,7 @@ void draw_open_doors(Arena& arena, std::vector<int>& open_tiles){
         std::cout << "CRIT";
       }
       if(player.crit_timer > 0.f){
-        DrawText(TextFormat("- %.0f", player.last_dmg),player.world_pos.x, player.world_pos.y, 25, RED);
+        DrawText(TextFormat("--%.0f", player.last_dmg),player.world_pos.x, player.world_pos.y, 25, RED);
       }
 
 

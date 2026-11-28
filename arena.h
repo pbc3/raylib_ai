@@ -11,7 +11,7 @@ constexpr int TILE_SIZE = 32;
 const float BULLET_DAMAGE = 20.f;
 
 enum TerrainType{
-  GROUND, WALL, WATER, DOOR, OBSTACLE
+  GROUND, WALL, WATER, OPEN_DOOR, OBSTACLE, CLOSED_DOOR
 };
 
 struct Arena {
@@ -40,7 +40,7 @@ struct Arena {
   bool isDoor(int tile_);
   bool isWalkable(int tile);
   bool isSuitableArtefact(int tile);
-  void open_door(int player_tile, std::vector<int>& open_door_tiles);
+  void close_door(int player_tile, std::vector<int>& open_door_tiles);
 
   int flatten(int row, int col);
   int vec2_to_tile(Vec2 world_pos);

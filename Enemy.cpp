@@ -99,7 +99,7 @@ void Enemy::setup_patrol_paths(Arena& arena){
     while(patrol_targets.size() <= 15){
       Vec2 random_target = {dist_x(gen), dist_y(gen)};
       int tile = arena.vec2_to_tile(random_target);
-      if(arena.isWall(tile)){
+      if(!arena.isWalkable(tile)){
         continue;
       }
       patrol_targets.push_back(arena.tile_to_world(tile));
@@ -172,6 +172,7 @@ void Enemy::patrol(Arena& arena, float dt){
 
     if(dist < 0.0001){
       spotted_player = true;
+      obstructed_los = false;
       last_seen_player = player.world_pos;
       return;
     }
@@ -197,7 +198,8 @@ void Enemy::patrol(Arena& arena, float dt){
     float step = 8.0f;
     for(float i = 0; i < dist; i+=step){
       at = ray.at(i);
-      if(arena.isWall(arena.vec2_to_tile(at)) || arena.isObstacle(arena.vec2_to_tile(at))){
+      int tile = arena.vec2_to_tile(at);
+      if(!arena.isWalkable(tile)){
         return;
       }
     }
@@ -232,26 +234,26 @@ std::vector<int> neighbours_zones(Arena& arena, int node){
   
   if(!arena.isWall(row+1,col)){
     int neighbour_tile = arena.flatten(row+1,col);
-    if(!arena.isObstacle(neighbour_tile) && !arena.isDoor(neighbour_tile)){
-    neighbour_tiles.push_back(neighbour_tile);
-  }
+    if(arena.isWalkable(neighbour_tile) && !arena.isDoor(neighbour_tile)){
+      neighbour_tiles.push_back(neighbour_tile);
+    }
   }
   if(!arena.isWall(row-1,col)){
     int neighbour_tile = arena.flatten(row-1,col);
-    if(!arena.isObstacle(neighbour_tile) && !arena.isDoor(neighbour_tile)){
-    neighbour_tiles.push_back(neighbour_tile);
+    if(arena.isWalkable(neighbour_tile) && !arena.isDoor(neighbour_tile)){
+      neighbour_tiles.push_back(neighbour_tile);
     }
   }
   if(!arena.isWall(row,col-1)){
-  int neighbour_tile = arena.flatten(row,col-1);
-    if(!arena.isObstacle(neighbour_tile) && !arena.isDoor(neighbour_tile)){
-    neighbour_tiles.push_back(neighbour_tile);
+    int neighbour_tile = arena.flatten(row,col-1);
+    if(arena.isWalkable(neighbour_tile) && !arena.isDoor(neighbour_tile)){
+      neighbour_tiles.push_back(neighbour_tile);
     }
   }
   if(!arena.isWall(row,col+1)){
-  int neighbour_tile = arena.flatten(row,col+1);
-    if(!arena.isObstacle(neighbour_tile) && !arena.isDoor(neighbour_tile)){
-    neighbour_tiles.push_back(neighbour_tile);
+    int neighbour_tile = arena.flatten(row,col+1);
+    if(arena.isWalkable(neighbour_tile) && !arena.isDoor(neighbour_tile)){
+      neighbour_tiles.push_back(neighbour_tile);
     }
   }
   return neighbour_tiles;

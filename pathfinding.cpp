@@ -33,16 +33,18 @@ std::vector<std::pair<int, int>> neighbours(Arena& arena, int tile) {
 
   // update cost based on ter1in type
   if(arena.isWalkable(tile1)){
-    neighbour_tiles.push_back({arena.terrain_cost(row,col),tile1});
+    neighbour_tiles.push_back({arena.terrain_cost(row+1,col),tile1});
   }
   if(arena.isWalkable(tile2)){
-  neighbour_tiles.push_back({arena.terrain_cost(row,col),tile2});
+ 
+neighbour_tiles.push_back({arena.terrain_cost(row-1,col),tile2});
   }
   if(arena.isWalkable(tile3)){
-  neighbour_tiles.push_back({arena.terrain_cost(row,col),tile3});
+  
+neighbour_tiles.push_back({arena.terrain_cost(row,col+1),tile3});
   }
   if(arena.isWalkable(tile4)){
-  neighbour_tiles.push_back({arena.terrain_cost(row,col),tile4});
+  neighbour_tiles.push_back({arena.terrain_cost(row,col-1),tile4});
   }
 
   return neighbour_tiles;
@@ -73,9 +75,9 @@ std::vector<int> astar(Arena &arena, int start_node, int target_node) {
 
     for (auto [edge_cost, candidate] : neighbours(arena, node)) {
       auto [row, col] = arena.tile_to_row_col(candidate);
-      if(arena.isWall(row,col)){
-        continue;
-      } 
+      // if(arena.isWall(row,col)){
+      //   continue;
+      // } 
 
 			int new_cost = edge_cost + cost_so_far.at(node); // g(n);
 
@@ -116,9 +118,9 @@ std::vector<int> dijkstra(Arena &arena, int start_node, int target_node) {
 
     for (auto [edge_cost, candidate] : neighbours(arena, node)) {
       auto [row, col] = arena.tile_to_row_col(candidate);
-      if(arena.isWall(row,col)){
-        continue;
-      } 
+      // if(arena.isWall(row,col)){
+      //   continue;
+      // } 
 
 			int new_cost = edge_cost + cost_so_far.at(node); // g(n);
 
@@ -176,9 +178,9 @@ std::vector<int> BFS(Arena& arena, int start_node, int target_node){
     }
     for(int neighbour : neighbours_unweighted(arena, node)){
       auto [row, col] = arena.tile_to_row_col(neighbour);
-      if(arena.isWall(row,col)){
-        continue;
-      } 
+      // if(arena.isWall(row,col)){
+      //   continue;
+      // } 
         if(!visited[neighbour]){
           visited[neighbour] = true;
           frontier.push(neighbour);

@@ -158,7 +158,7 @@ bool can_engage = agent.perceptions.spotted_player && agent.perceptions.in_range
 
 
             MovementState res = agent.follow_path(dt,arena);
-            if(res == MovementState::ARRIVED || res == MovementState::BLOCKED){
+            if(res == MovementState::ARRIVED || res == MovementState::BLOCKED || res == MovementState::NO_PATH){
                 agent.scanning = true;
                 float prog = dt / rotation_speed;
                 agent.rotation_progress += prog;
@@ -364,7 +364,7 @@ Vec2 EnemyStateMachine::find_cover(Arena& arena, Enemy& agent, Player& player){
 
         for(float i = 0; i < dist; i+=step){
             Vec2 at = ray.at(i);
-            if(arena.isWall(arena.vec2_to_tile(at))){
+            if(!arena.isWalkable(arena.vec2_to_tile(at))){
                 los_blocked = true;
             }
         }
@@ -384,7 +384,7 @@ Vec2 EnemyStateMachine::find_cover(Arena& arena, Enemy& agent, Player& player){
             Vec2 at{0,0};
             for(float i = 0; i < distance; i+=step){
                 at = ray_from_waypoint.at(i);
-                if(arena.isWall(arena.vec2_to_tile(at))){
+                if(!arena.isWalkable(arena.vec2_to_tile(at))){
                     exposed = false;
                     break;
                 }

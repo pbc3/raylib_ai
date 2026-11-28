@@ -25,9 +25,9 @@ bool out_of_bounds(Arena& arena, Vec2 requested_pos){
           Vec2 boundary = boundaries[i];
           int tile = arena.vec2_to_tile(boundary);
     
-          if(out_of_bounds(arena, boundary) || arena.isWall(tile) || arena.isObstacle(tile)){
-            return false;
-          }
+       if(out_of_bounds(arena, boundary) || !arena.isWalkable(tile)){
+        return false;
+    }
         }
       return true;
 };
@@ -94,8 +94,8 @@ int Arena::terrain_cost(int _row, int _col){
     case TerrainType::WATER:{
       return 2;
     }
-    case TerrainType::DOOR:{
-
+    case TerrainType::OPEN_DOOR:{
+      return 1;
     }
   }
   return 1;
@@ -121,12 +121,12 @@ bool Arena::isWater(int tile_){
 bool Arena::isClosedDoor(int tile_){
   auto [row,col] = tile_to_row_col(tile_);
   int tile_val = tile(row, col);
-  return tile_val == 3 ? true : false;
+  return tile_val == 5 ? true : false;
 }
 bool Arena::isOpenDoor(int tile_){
   auto [row,col] = tile_to_row_col(tile_);
   int tile_val = tile(row, col);
-  return tile_val == 5 ? true : false;
+  return tile_val == 3 ? true : false;
 }
 
 bool Arena::isDoor(int tile_){
@@ -139,13 +139,14 @@ bool Arena::isObstacle(int tile_){
   return tile_val == 4 ? true : false;
 }
 bool Arena::isWalkable(int tile){
-if(isWall(tile) || isObstacle(tile) || out_of_bounds(*this,tile_to_world(tile))){
+if(isWall(tile) || isObstacle(tile) || isClosedDoor(tile) ||
+ out_of_bounds(*this,tile_to_world(tile))){
       return false;
     }
     return true;
 }
 bool Arena::isSuitableArtefact(int tile){
-  if(!isWalkable(tile) || isClosedDoor(tile)){
+  if(!isWalkable(tile) || isDoor(tile)){
     return false;
   }
   return true;
@@ -183,14 +184,23 @@ int Arena::vec2_to_tile(Vec2 world_pos) {
   return flatten(row,col);
 }
 
-void Arena::open_door(int player_tile, std::vector<int>& open_door_tiles){
+void Arena::close_door(int player_tile, std::vector<int>& closed_door_tiles){
   auto [row,col] = tile_to_row_col(player_tile);
   std::vector<int> tiles = {flatten(row+1,col), flatten(row-1,col), flatten(row,col+1), flatten(row,col-1)};
-  for(int i = 0; i < 3; i++){
+  for(int i = 0; i <= 3; i++){
     if(isClosedDoor(tiles[i])){
       auto [r,c] = tile_to_row_col(tiles[i]);
+      grid[r][c] = 3;
+      std::erase_if(closed_door_tiles, [&](int x) {
+      return x == tiles[i];
+      });
+      break; // only close 1 door
+    }
+    if(isOpenDoor(tiles[i])){
+      auto [r,c] = tile_to_row_col(tiles[i]);
       grid[r][c] = 5;
-      open_door_tiles.push_back(tiles[i]);
+      closed_door_tiles.push_back(tiles[i]);
+      break; // only close 1 door
     }
   }
 }
