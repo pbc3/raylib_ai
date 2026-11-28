@@ -8,7 +8,7 @@ float& Player::take_damage(float base_dmg) {
 
     // 10 percent chance of a critical hit
     int crit = GetRandomValue(1, 100);
-    if (crit <= 99) {
+    if (crit <= 10) {
         crit_timer = 1.0f;
         crit_hit = true;
         base_dmg += GetRandomValue(1, 8);

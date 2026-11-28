@@ -148,17 +148,19 @@ void update_player(Arena& arena, Player& player, input_state input, float dt) {
     }
     // normalise it so we get even movement across diagonal,
     candidate.normalise();
+    int tile = arena.vec2_to_tile(player.world_pos);
+    float speed_modifier = arena.terrain_speed_modifier(tile);
 
-    // new horizontal movement
+    // new horizontal movem ent
     float new_x = player.world_pos.x;
-    new_x += candidate.x * player.velocity.x * dt;
+    new_x += candidate.x * player.velocity.x * speed_modifier * dt;
     Vec2 requested_movement = {new_x, player.world_pos.y};
     if (valid_movement(arena, requested_movement, player.size)) {
         player.world_pos.x = new_x;
     }
     // new vertical movement
     float new_y = player.world_pos.y;
-    new_y += candidate.y * player.velocity.y * dt;
+    new_y += candidate.y * player.velocity.y *speed_modifier *  dt;
     requested_movement.x = player.world_pos.x;
     requested_movement.y = new_y;
     if (valid_movement(arena, requested_movement, player.size)) {
@@ -315,6 +317,8 @@ void draw_player_triangle(Player& player, Vec2 mouse_dir) {
 }
 
 void draw_enemy_triangles(std::vector<Enemy>& enemies) {
+  if(enemies.empty())
+    return;
     float half = enemies[0].size / 2;
     float gap = 10.f;
     for (Enemy& enemy : enemies) {
@@ -333,10 +337,15 @@ void draw_closed_doors(Arena& arena, std::vector<int>& open_tiles) {
         DrawTexture(closed_door, top_left.x, top_left.y, WHITE);
     }
 }
+
+void render(){
+
+};
+
 int main() {
     SetTargetFPS(120);
     // get path realtive to build-dir
-    const auto csv = std::filesystem::path(GetApplicationDirectory()) / "assets" / "map_binary.csv";
+    const auto csv = std::filesystem::path(GetApplicationDirectory()) / "assets" / "arena.csv";
     Arena arena(csv.string());
     const auto arena_tex =
         std::filesystem::path(GetApplicationDirectory()) / "assets" / "arena.png";
@@ -412,9 +421,7 @@ int main() {
         }
         Vec2 player_top_left = player.world_pos - Vec2{player.size / 2, player.size / 2};
 
-        if (player.crit_hit) {
-            std::cout << "CRIT";
-        }
+
         if (player.crit_timer > 0.f) {
             DrawText(TextFormat("--%.0f", player.last_dmg), player.world_pos.x, player.world_pos.y,
                      25, RED);
@@ -445,11 +452,7 @@ int main() {
                 }
             }
         }
-        std::cout << player.health << "\n";
-        EndMode2D();
-
-        EndDrawing();
-        DrawText(TextFormat("health:%f", player.health), 0, 30, 25, RED);
+                DrawText(TextFormat("health:%f", player.health), 0, 30, 25, RED);
         if (!enemies.empty()) {
             const Enemy& e = enemies[0];
             DrawText(TextFormat("STATE: %d | GOAL: %d | WP: %d/%d | SEEN: %d | RANGE: %d",
@@ -458,6 +461,10 @@ int main() {
                                 e.perceptions.in_range),
                      10, 10, 10, GREEN);
         }
+        EndMode2D();
+
+        EndDrawing();
+
     }
 
     CloseWindow();

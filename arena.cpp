@@ -84,17 +84,36 @@ int Arena::terrain_cost(int _row, int _col) {
 
     switch (value) {
     case TerrainType::GROUND: {
-        return 1;
-    }
-    case TerrainType::WATER: {
         return 2;
     }
+    case TerrainType::WATER: {
+        return 4;
+    }
     case TerrainType::OPEN_DOOR: {
-        return 1;
+        return 2;
+    }
+    case TerrainType::FAST_GROUND:{
+      return 1;
     }
     }
     return 1;
 };
+
+float Arena::terrain_speed_modifier(int tile_){
+  auto [row,col] = tile_to_row_col(tile_);
+  int value = tile(row,col);
+  switch(value){
+    case TerrainType::WATER:{
+      return 0.5f;
+    }
+    case TerrainType::FAST_GROUND:{
+      return 1.5f;
+    }
+    default:{
+      return 1.f;
+    }
+  }
+}
 
 bool Arena::isWall(int _row, int _col) {
     int tile_val = tile(_row, _col);

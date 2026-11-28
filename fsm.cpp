@@ -180,7 +180,6 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
         break;
     }
     case EnemyState::FLEE: {
-
         MovementState res = agent.follow_path(dt, arena);
         if (res == MovementState::ARRIVED) {
             change_state(agent, arena, EnemyState::HEAL, player);
@@ -193,6 +192,9 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
         //         return;
         // }
         MovementState res = agent.follow_path(dt, arena);
+        if(res == MovementState::BLOCKED || res == MovementState::NO_PATH){
+            on_enter(agent,arena,player); // if the door becomes closed off, replan again a new route.
+        }
         if (res == MovementState::ARRIVED) {
             change_state(agent, arena, EnemyState::GUARD, player);
             break;

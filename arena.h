@@ -10,7 +10,7 @@
 constexpr int TILE_SIZE = 32;
 const float BULLET_DAMAGE = 20.f;
 
-enum TerrainType { GROUND, WALL, WATER, OPEN_DOOR, OBSTACLE, CLOSED_DOOR };
+enum TerrainType { GROUND, WALL, WATER, OPEN_DOOR, OBSTACLE, CLOSED_DOOR,FAST_GROUND};
 
 struct Arena {
     int cols;
@@ -37,6 +37,7 @@ struct Arena {
     bool isObstacle(int tile);
     bool isClosedDoor(int tile_);
     bool isOpenDoor(int tile_);
+    bool isFastGround(int tile_);
     bool isDoor(int tile_);
     bool isWalkable(int tile);
     bool isSuitableArtefact(int tile);
@@ -48,6 +49,7 @@ struct Arena {
     Vec2 tile_to_world(int tile);
     Vec2 random_pos();
     int terrain_cost(int _row, int _col);
+    float terrain_speed_modifier(int tile_);
     // guard zones
     void fill_zone(int start_node, int zone);
     std::vector<int> tile_to_zone; // input the players current tile, get out what zone player is in
