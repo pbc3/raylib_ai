@@ -1,20 +1,19 @@
 #pragma once
 #include "entity.h"
 #include "math_utils.h"
+#include "raylib.h"
 #include "utils.h"
 #include <array>
 #include <exception>
 #include <random>
 #include <stdexcept>
-#include "raylib.h"
-
 
 struct Enemy;
 
 constexpr int TILE_SIZE = 32;
 const float BULLET_DAMAGE = 20.f;
 
-enum TerrainType { GROUND, WALL, WATER, OPEN_DOOR, OBSTACLE, CLOSED_DOOR,FAST_GROUND};
+enum TerrainType { GROUND, WALL, WATER, OPEN_DOOR, OBSTACLE, CLOSED_DOOR, FAST_GROUND };
 
 struct Arena {
     int cols;
@@ -45,7 +44,8 @@ struct Arena {
     bool isDoor(int tile_);
     bool isWalkable(int tile);
     bool isSuitableArtefact(int tile);
-    void close_door(Vec2 player_pos, float player_size, std::vector<int>& closed_door_tiles,std::vector<Enemy>& enemies);
+    void close_door(Vec2 player_pos, float player_size, std::vector<int>& closed_door_tiles,
+                    std::vector<Enemy>& enemies);
 
     int flatten(int row, int col);
     int vec2_to_tile(Vec2 world_pos);

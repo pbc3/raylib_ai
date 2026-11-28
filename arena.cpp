@@ -1,8 +1,8 @@
 #include "arena.h"
+#include "enemy.h"
 #include <array>
 #include <exception>
 #include <stdexcept>
-#include "enemy.h"
 
 bool out_of_bounds(Arena& arena, Vec2 requested_pos) {
     if (requested_pos.y > arena.map_height || requested_pos.x > arena.map_width ||
@@ -93,27 +93,27 @@ int Arena::terrain_cost(int _row, int _col) {
     case TerrainType::OPEN_DOOR: {
         return 2;
     }
-    case TerrainType::FAST_GROUND:{
-      return 1;
+    case TerrainType::FAST_GROUND: {
+        return 1;
     }
     }
     return 1;
 };
 
-float Arena::terrain_speed_modifier(int tile_){
-  auto [row,col] = tile_to_row_col(tile_);
-  int value = tile(row,col);
-  switch(value){
-    case TerrainType::WATER:{
-      return 0.5f;
+float Arena::terrain_speed_modifier(int tile_) {
+    auto [row, col] = tile_to_row_col(tile_);
+    int value = tile(row, col);
+    switch (value) {
+    case TerrainType::WATER: {
+        return 0.5f;
     }
-    case TerrainType::FAST_GROUND:{
-      return 1.5f;
+    case TerrainType::FAST_GROUND: {
+        return 1.5f;
     }
-    default:{
-      return 1.f;
+    default: {
+        return 1.f;
     }
-  }
+    }
 }
 
 bool Arena::isWall(int _row, int _col) {
@@ -196,15 +196,16 @@ int Arena::vec2_to_tile(Vec2 world_pos) {
     return flatten(row, col);
 }
 
-bool overlaps(Vec2 door, Vec2 pos, float size){
-  pos = centre_to_top_left(pos,size);
-  Rectangle entity_rect = {pos.x,pos.y,size,size};
-  door = centre_to_top_left(door,32);
-  Rectangle door_rect = {door.x,door.y,32.f,32.f};
-  return CheckCollisionRecs(entity_rect,door_rect);
+bool overlaps(Vec2 door, Vec2 pos, float size) {
+    pos = centre_to_top_left(pos, size);
+    Rectangle entity_rect = {pos.x, pos.y, size, size};
+    door = centre_to_top_left(door, 32);
+    Rectangle door_rect = {door.x, door.y, 32.f, 32.f};
+    return CheckCollisionRecs(entity_rect, door_rect);
 }
 
-void Arena::close_door(Vec2 player_pos, float player_size, std::vector<int>& closed_door_tiles,std::vector<Enemy>& enemies) {
+void Arena::close_door(Vec2 player_pos, float player_size, std::vector<int>& closed_door_tiles,
+                       std::vector<Enemy>& enemies) {
     int player_tile = vec2_to_tile(player_pos);
     auto [row, col] = tile_to_row_col(player_tile);
     std::vector<int> tiles = {flatten(row + 1, col), flatten(row - 1, col), flatten(row, col + 1),
@@ -213,16 +214,16 @@ void Arena::close_door(Vec2 player_pos, float player_size, std::vector<int>& clo
         // prevent player & enemy being stuck in door
         Vec2 door_pos = tile_to_world(tiles[i]);
         bool occupied = false;
-          if (overlaps(door_pos, player_pos, player_size)) {
+        if (overlaps(door_pos, player_pos, player_size)) {
             occupied = true;
         }
-        for(const Enemy& enemy : enemies){
-          int enemy_tile = vec2_to_tile(enemy.world_pos);
-          if(overlaps(door_pos,enemy.world_pos,enemy.size))
-          occupied = true;
+        for (const Enemy& enemy : enemies) {
+            int enemy_tile = vec2_to_tile(enemy.world_pos);
+            if (overlaps(door_pos, enemy.world_pos, enemy.size))
+                occupied = true;
         }
-        if(occupied){
-          continue;
+        if (occupied) {
+            continue;
         }
         if (isClosedDoor(tiles[i])) {
             auto [r, c] = tile_to_row_col(tiles[i]);

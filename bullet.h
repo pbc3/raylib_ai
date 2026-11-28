@@ -1,5 +1,6 @@
 #pragma once
 #include "entity.h"
+#include "raylib.h"
 #include <vector>
 
 struct Bullet : public Entity {
@@ -12,3 +13,4 @@ struct Bullet : public Entity {
 };
 
 void spawn_bullet(std::vector<Bullet>& bullets, Vec2 spawn_pos, Vec2 direction, Team team);
+bool bullet_hit(Bullet& bullet, Entity& entity);

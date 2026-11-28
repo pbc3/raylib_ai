@@ -96,3 +96,14 @@ bool neighbours_contain_obstacles(Arena& arena, int tile) {
     }
     return false;
 }
+
+void update_artefacts(std::array<ArtefactSet, 6>& artefact_sets, Player& player) {
+    // artefact collection
+    for (ArtefactSet& af_set : artefact_sets) {
+        for (Artefact& af : af_set.artefacts) {
+            if (player.world_pos.distance(af.world_pos) < 25.f) {
+                af.collected = true;
+            }
+        }
+    }
+}

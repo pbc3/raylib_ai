@@ -75,7 +75,7 @@ void EnemyStateMachine::update_enemy_A(Enemy& agent, float dt, Arena& arena, Pla
         if (move_res == MovementState::ARRIVED) {
             if (agent.perceptions.spotted_player) {
                 Vec2 new_cover = find_cover(arena, agent, player); // try again
-                agent.replan(arena,new_cover);
+                agent.replan(arena, new_cover);
                 break;
             }
             change_state(agent, arena, EnemyState::HEAL, player);
@@ -110,7 +110,7 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
     bool can_engage = agent.perceptions.spotted_player && agent.perceptions.in_range &&
                       !agent.perceptions.obstructed_los;
 
-        if (state != EnemyState::FLEE && state != EnemyState::HEAL &&
+    if (state != EnemyState::FLEE && state != EnemyState::HEAL &&
         health_below_threshold(agent.health, cover_threshold)) {
         change_state(agent, arena, EnemyState::FLEE, player);
     }
@@ -171,8 +171,8 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
         if (res == MovementState::ARRIVED) {
             change_state(agent, arena, EnemyState::HEAL, player);
         }
-        if(res == MovementState::BLOCKED || res == MovementState::NO_PATH){
-            on_enter(agent,arena,player);
+        if (res == MovementState::BLOCKED || res == MovementState::NO_PATH) {
+            on_enter(agent, arena, player);
         }
         break;
     }
@@ -182,17 +182,17 @@ void EnemyStateMachine::update_enemy_B(Enemy& agent, float dt, Arena& arena, Pla
         //         return;
         // }
         MovementState res = agent.follow_path(dt, arena);
-        if(res == MovementState::NO_PATH){
-            if(replan_timer < 5.0f){
-                replan_timer+=dt;
-            }
-            else{
-                agent.replan(arena,agent.current_goal_pos);
+        if (res == MovementState::NO_PATH) {
+            if (replan_timer < 5.0f) {
+                replan_timer += dt;
+            } else {
+                agent.replan(arena, agent.current_goal_pos);
                 replan_timer = 0.0f;
             }
         }
-        if(res == MovementState::BLOCKED){
-            on_enter(agent,arena,player); // if the door becomes closed off, replan again a new route.
+        if (res == MovementState::BLOCKED) {
+            on_enter(agent, arena,
+                     player); // if the door becomes closed off, replan again a new route.
         }
         if (res == MovementState::ARRIVED) {
             change_state(agent, arena, EnemyState::GUARD, player);

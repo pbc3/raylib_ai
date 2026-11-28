@@ -64,9 +64,9 @@ MovementState Enemy::follow_path(float dt, Arena& arena) {
     // vision cone sees "in front"
     move_direction = dir;
     // stop overshooting the target, clamp.
-    float movement_step = std::min(velocity.x * dt, dist);
     int tile = arena.vec2_to_tile(world_pos);
     float speed_modifier = arena.terrain_speed_modifier(tile);
+    float movement_step = std::min(velocity.x * dt * speed_modifier, dist);
     Vec2 new_mov = world_pos + dir * movement_step * speed_modifier;
     if (!valid_movement(arena, new_mov, size)) {
         return MovementState::BLOCKED;

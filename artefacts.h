@@ -21,3 +21,4 @@ std::array<ArtefactSet, 6> generate_artefacts(Arena& arena, Player& player,
 std::vector<Vec2> generate_artefact_locations(Arena& arena, Player& player,
                                               std::vector<Enemy>& enemies);
 bool neighbours_contain_obstacles(Arena& arena, int tile);
+void update_artefacts(std::array<ArtefactSet, 6>& artefact_sets, Player& player);
