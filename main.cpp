@@ -186,7 +186,11 @@ void update_bullets(Arena& arena, std::vector<Bullet>& bullets, Player& player, 
           b.world_pos = new_bulet_pos;
           // check whether bullet hit enemy or player
           Entity* hit_target = hit_entity(player,enemies,b);
+
           if(hit_target){
+          // if(hit_target == &player){
+          //   player.take_damage()
+          // }
             hit_target->take_damage(BULLET_DAMAGE);
           }
         }
@@ -372,7 +376,7 @@ void draw_open_doors(Arena& arena, std::vector<int>& open_tiles){
     player.world_pos = { 50,150};
     player.velocity = {550, 550};
     player.size = 25.f;
-    player.health = 100.f;
+    player.health = 1000.f;
     player.team = Team::PLAYER;
 
     std::vector<Enemy> enemies;
@@ -402,7 +406,7 @@ void draw_open_doors(Arena& arena, std::vector<int>& open_tiles){
     const auto open_door_tex = std::filesystem::path(GetApplicationDirectory()) / "assets" / "door.png";
     open_door = LoadTexture(open_door_tex.string().c_str());
     std::vector<int> open_door_tiles;
-    
+    float draw_hit_timer = 0.0f;
     while (!WindowShouldClose()) {
       if(IsKeyPressed(KEY_R)) {
        arena.grid[25][15] = !arena.grid[25][15];
@@ -418,7 +422,9 @@ void draw_open_doors(Arena& arena, std::vector<int>& open_tiles){
       float dt = GetFrameTime();
       input_state input = handle_input(camera, player);
       update(arena, dt, player, enemies,bullets, input,artefact_tiles, open_door_tiles);
-
+      if(player.crit_timer > 0.f){
+        player.crit_timer -= dt;
+      }
       //render
       BeginDrawing();
       ClearBackground({0,0,0,0});
@@ -431,6 +437,15 @@ void draw_open_doors(Arena& arena, std::vector<int>& open_tiles){
       draw_open_doors(arena,open_door_tiles);
       for (Bullet &b : bullets) { DrawCircle(b.world_pos.x, b.world_pos.y, b.size, BLACK);}
       Vec2 player_top_left = player.world_pos - Vec2{player.size / 2, player.size / 2};
+
+      if(player.crit_hit){
+        std::cout << "CRIT";
+      }
+      if(player.crit_timer > 0.f){
+        DrawText(TextFormat("- %.0f", player.last_dmg),player.world_pos.x, player.world_pos.y, 25, RED);
+      }
+
+
       DrawRectangleV(*reinterpret_cast<Vector2 *>(&player_top_left),{player.size, player.size}, BLUE);
         for(int i = 0; i < enemies.size(); i++){
         auto& enemy = enemies[i];
@@ -455,7 +470,7 @@ void draw_open_doors(Arena& arena, std::vector<int>& open_tiles){
     EndMode2D();
 
     EndDrawing();
-    DrawText(TextFormat("health:%i",player.health),0,30,25,RED);
+    DrawText(TextFormat("health:%f",player.health),0,30,25,RED);
     if (!enemies.empty()) {
     const Enemy& e = enemies[0];
     DrawText(TextFormat( "STATE: %d | GOAL: %d | WP: %d/%d | SEEN: %d | RANGE: %d"
