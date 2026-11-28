@@ -2,10 +2,8 @@
 #include "math_utils.h"
 #include <iostream>
 
-enum class Team{
-    PLAYER,ENEMY
-};
-struct Entity{
+enum class Team { PLAYER, ENEMY };
+struct Entity {
     Team team;
     Vec2 world_pos;
     float size;
