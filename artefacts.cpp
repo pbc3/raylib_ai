@@ -2,9 +2,17 @@
 
 std::array<ArtefactSet, 6> generate_artefacts(Arena &arena, Player &player,
                                               std::vector<Enemy> &enemies) {
-  std::array<const char *, 6> texture_names = {
-      "assets/diamond.png", "assets/potion.png", "assets/skull.png",
-      "assets/stave.png",   "assets/book.png",   "assets/scroll.png"};
+const auto assets =
+    std::filesystem::path(GetApplicationDirectory()) / "assets";
+
+std::array<std::filesystem::path, 6> texture_names = {
+    assets / "diamond.png",
+    assets / "potion.png",
+    assets / "skull.png",
+    assets / "stave.png",
+    assets / "book.png",
+    assets / "scroll.png"
+};
   std::array<ArtefactSet, 6> artefact_sets;
 
   // first - generate locations
@@ -14,7 +22,7 @@ std::array<ArtefactSet, 6> generate_artefacts(Arena &arena, Player &player,
   int outer_idx = 0;
   int inner_idx = 0;
   for (ArtefactSet &artefact_set : artefact_sets) {
-    auto tex = LoadTexture(texture_names[outer_idx]);
+    auto tex = LoadTexture(texture_names[outer_idx].string().c_str());
     artefact_set.tex = tex;
     for (int i = 0; i < 3; i++) {
       Artefact af{};
@@ -30,7 +38,9 @@ std::array<ArtefactSet, 6> generate_artefacts(Arena &arena, Player &player,
 std::vector<Vec2> generate_artefact_locations(Arena &arena, Player &player,
                                               std::vector<Enemy> &enemies) {
   std::vector<Vec2> locations;
-  while (locations.size() < 18) {
+  int attempt_limit = 10000;
+  while (locations.size() < 18 && attempt_limit >= 0) {
+    attempt_limit--;
     Vec2 candidate = arena.random_pos();
     int tile = arena.vec2_to_tile(candidate);
     candidate = arena.tile_to_world(tile); // centre it
@@ -38,8 +48,8 @@ std::vector<Vec2> generate_artefact_locations(Arena &arena, Player &player,
     if (!arena.isSuitableArtefact(tile)) {
       continue;
     }
-    // minimum spacing
 
+    // minimum spacing
     bool safe_loc = true;
     for (Vec2 loc : locations) {
       if (loc.distance(candidate) < 128.f) {

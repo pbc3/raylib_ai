@@ -26,10 +26,12 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 struct Renderer {
   Texture2D arena;
   Texture2D closed_door;
-
   void load_textures(const char *arena_path, const char *door_path) {
     arena = LoadTexture(arena_path);
     closed_door = LoadTexture(door_path);
+
+    SetTextureFilter(arena, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(closed_door, TEXTURE_FILTER_BILINEAR);
   }
   void render(GameLevel &level, Camera2D &camera, Vec2 mouse_dir, bool debug);
 };

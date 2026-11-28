@@ -26,16 +26,42 @@ void draw_enemies(Arena &arena, std::vector<Enemy> &enemies, bool debug) {
   }
 };
 
+void draw_enemy_info(Enemy &enemy) {
+  static float width = 40.f;
+  static float height = 6.f;
+  float x = enemy.world_pos.x - width / 2;
+  float y = enemy.world_pos.y - enemy.size / 2 - 12.f;
+  float health_fill = std::clamp(enemy.health / 100.f, 0.f, 1.f);
+  DrawRectangleRec({x, y, width, height}, DARKGRAY);
+  DrawRectangleRec({x, y, width * health_fill, height}, GREEN);
+  DrawRectangleLines(x, y, width, height, BLACK);
+  const char *state = get_state(enemy.fsm.state);
+  Color state_colour = get_colour(enemy.fsm.state);
+  DrawText(TextFormat("%s ", state), x, y - 20, 20, state_colour);
+  DrawText(TextFormat("ID : %i", enemy.id), x, y - 40, 25, RED);
+}
+
+
+void draw_player_health(Player& player){
+    static float width = 40.f;
+  static float height = 6.f;
+  float x = player.world_pos.x - width / 2;
+  float y = player.world_pos.y - player.size / 2 - 12.f;
+  float health_fill = std::clamp(player.health / 250.f, 0.f, 1.f);
+  DrawRectangleRec({x, y, width, height}, DARKGRAY);
+  DrawRectangleRec({x, y, width * health_fill, height}, GREEN);
+  DrawRectangleLines(x, y, width, height, BLACK);
+}
 void Renderer::render(GameLevel &level, Camera2D &camera, Vec2 mouse_dir,
                       bool debug) {
   BeginDrawing();
-  ClearBackground({100, 125, 150, 255});
+  ClearBackground(BLACK);
   //  camera.target = {level.player.world_pos.x, level.player.world_pos.y};
   BeginMode2D(camera);
   DrawTexture(arena, 0, 0, WHITE);
   Vec2 player_top_left = level.player.world_pos -
                          Vec2{level.player.size / 2, level.player.size / 2};
-
+draw_player_health(level.player);
   if (level.player.crit_timer > 0.f) {
     DrawText(TextFormat("--%.0f", level.player.last_dmg),
              level.player.world_pos.x, level.player.world_pos.y, 25, RED);
@@ -145,20 +171,7 @@ void draw_health_bars(Enemy &enemy) {
   DrawRectangleLines(x, y, width, height, BLACK);
 }
 
-void draw_enemy_info(Enemy &enemy) {
-  static float width = 40.f;
-  static float height = 6.f;
-  float x = enemy.world_pos.x - width / 2;
-  float y = enemy.world_pos.y - enemy.size / 2 - 12.f;
-  float health_fill = std::clamp(enemy.health / 100.f, 0.f, 1.f);
-  DrawRectangleRec({x, y, width, height}, DARKGRAY);
-  DrawRectangleRec({x, y, width * health_fill, height}, GREEN);
-  DrawRectangleLines(x, y, width, height, BLACK);
-  const char *state = get_state(enemy.fsm.state);
-  Color state_colour = get_colour(enemy.fsm.state);
-  DrawText(TextFormat("%s ", state), x, y - 20, 20, state_colour);
-  DrawText(TextFormat("ID : %i", enemy.id), x, y - 40, 25, RED);
-}
+
 
 // for debug only
 void draw_grid(Arena &arena) {

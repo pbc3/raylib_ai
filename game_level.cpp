@@ -118,12 +118,18 @@ void GameLevel::update(Arena &arena, float dt, GameLevel &level,
 void GameLevel::restart_level() {
   enemies.clear();
   bullets.clear();
+for (int tile : door_tiles) {
+    auto [row, col] = arena.tile_to_row_col(tile);
+    arena.grid[row][col] = TerrainType::OPEN_DOOR;
+}
   door_tiles.clear();
+
+door_tiles.clear();
 
   player.world_pos = {50, 150};
   player.velocity = {310, 310};
   player.size = 24.f;
-  player.health = 100.f;
+  player.health = 250.f;
   player.team = Team::PLAYER;
   player.dead = false;
 
