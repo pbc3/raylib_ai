@@ -177,7 +177,7 @@ void Perceptions::update(Enemy *agent, Arena &arena, Player &player) {
   to_player.normalise();
   float dot = agent->forward.dot(to_player);
   // todo - do this offline
-  float half_angle = std::cosf(view_angle_rads / 2);
+  static float half_angle = std::cosf(view_angle_rads / 2);
 
   if (dot < half_angle) {
     // not inside vision cone, return
@@ -190,11 +190,10 @@ void Perceptions::update(Enemy *agent, Arena &arena, Player &player) {
 
   // raymarch
   Vec2 at = {};
-  float step = 8.0f;
+  float step = 2.0f;
   for (float i = 0; i < dist; i += step) {
     at = ray.at(i);
-    int tile = arena.vec2_to_tile(at);
-    if (!arena.isWalkable(tile)) {
+    if (!valid_movement(arena, at, 5.0f)) {
       return;
     }
   }

@@ -91,7 +91,15 @@ void EnemyStateMachine::update_enemy_A(Enemy &agent, float dt, Arena &arena,
       }
       change_state(agent, arena, EnemyState::HEAL, player);
     }
-    // else - not at cover yet, tick over...
+    if( move_res == MovementState::BLOCKED || move_res == MovementState::NO_PATH){
+        if(replan_timer < 3.0f){
+          replan_timer+=dt;
+        }
+        else{
+          agent.replan(arena, agent.perceptions.last_seen_player);
+          replan_timer = 0.f;
+        }
+    }
     break;
   }
   case EnemyState::HEAL: {
@@ -358,11 +366,7 @@ Vec2 EnemyStateMachine::find_cover(Arena &arena, Enemy &agent, Player &player) {
 
     int cover_tile = arena.vec2_to_tile(pos);
     int agent_tile = arena.vec2_to_tile(agent.world_pos);
-    auto path = astar(arena, agent_tile, cover_tile);
 
-    if (path.empty()) {
-      continue;
-    }
 
     // raycast, does it block the line of sight?
     float step = 1.0f;
@@ -379,13 +383,18 @@ Vec2 EnemyStateMachine::find_cover(Arena &arena, Enemy &agent, Player &player) {
       Vec2 at = ray.at(i);
       if (!arena.isWalkable(arena.vec2_to_tile(at))) {
         los_blocked = true;
+        break;
       }
     }
 
     if (!los_blocked) {
       continue;
     }
+    auto path = astar(arena, agent_tile, cover_tile);
 
+    if (path.empty()) {
+      continue;
+    }
     for (int waypoint : path) {
       bool exposed = true;
       Ray_ ray_from_waypoint;

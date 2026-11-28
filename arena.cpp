@@ -106,10 +106,10 @@ float Arena::terrain_speed_modifier(int tile_) {
   int value = tile(row, col);
   switch (value) {
   case TerrainType::WATER: {
-    return 0.5f;
+    return 0.75f;
   }
   case TerrainType::FAST_GROUND: {
-    return 1.5f;
+    return 1.2f;
   }
   default: {
     return 1.f;

@@ -21,7 +21,7 @@ struct Perceptions {
   bool in_zone;
   bool in_range;
   float engage_range = 150.f;
-  float view_angle_rads = 2.0944f; // 90* in radians
+  float view_angle_rads = 2.0944f; 
   float max_distance = 650.f;
   void update(Enemy *agent, Arena &arena, Player &player);
 };
