@@ -154,8 +154,7 @@ void Perceptions::update(Enemy* agent, Arena& arena, Player& player) {
     float dist = to_player.length();
 
     // in range?
-    const float ENGAGE_RANGE = 150.f;
-    if (dist < ENGAGE_RANGE) {
+    if (dist < engage_range) {
         in_range = true;
     }
 

@@ -20,6 +20,7 @@ struct Perceptions {
     bool obstructed_los;
     bool in_zone;
     bool in_range;
+    float engage_range;
     float view_angle_rads = 2.0944f; // 90* in radians
     float max_distance = 650.f;
     void update(Enemy* agent, Arena& arena, Player& player);
@@ -31,7 +32,7 @@ enum class EnemyType { CHASER, GUARD };
 
 struct Enemy : public Entity {
     EnemyType type;
-
+    int id;
     Vec2 velocity;
     float threshold = .2f;
     int goal_tile = -1;

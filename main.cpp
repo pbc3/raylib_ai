@@ -16,8 +16,8 @@
 #include "pathfinding.h"
 #include "player.h"
 
-constexpr int SCREEN_WIDTH = 1920;
-constexpr int SCREEN_HEIGHT = 1080;
+constexpr int SCREEN_WIDTH = 1280;
+constexpr int SCREEN_HEIGHT = 720;
 constexpr int ARENA_WIDTH = SCREEN_WIDTH / TILE_SIZE;   // screen x / tile
 constexpr int ARENA_HEIGHT = SCREEN_HEIGHT / TILE_SIZE; // screen y / tile
 constexpr Color GRID_COLOUR = {48, 59, 72, 255};
@@ -27,6 +27,8 @@ constexpr Color GRID_COLOUR = {48, 59, 72, 255};
 
 
 std::vector<Color> colours{WHITE, RED};
+struct GameLevel;
+
 
 bool bullet_hit(Bullet& bullet, Entity& entity) {
     Rectangle r;
@@ -204,21 +206,91 @@ void update_artefacts(std::array<ArtefactSet, 6>& artefact_sets, Player& player)
         }
     }
 }
-void update(Arena& arena, float dt, Player& player, std::vector<Enemy>& enemies,
-            std::vector<Bullet>& bullets, input_state input,
-            std::array<ArtefactSet, 6>& artefact_sets, std::vector<int>& closed_door_tiles) {
-    update_player(arena, player, input, dt);
-    update_enemies(arena, bullets, player, enemies, dt);
+void spawn_enemy_A(std::vector<Enemy>& enemies, Arena& arena, Player& player) {
+    Vec2 random_spawn = arena.random_pos();
+    while(random_spawn.distance(player.world_pos) < 128.f){
+      random_spawn = arena.random_pos();
+    }
+    Enemy enemy{};
+    enemy.world_pos = random_spawn;
+    enemy.velocity = {210, 210};
+    enemy.size = 26.f;
+    enemy.dead = false;
+    enemy.health = 100;
+    enemy.perceptions.engage_range = GetRandomValue(100, 220);
+    enemy.perceptions.spotted_player = false;
+    enemy.forward = {1.0f, 0.f};
+    enemy.type = EnemyType::CHASER;
+    enemy.setup_patrol_paths(arena);
+    enemy.fsm.on_enter(enemy, arena, player);
+    enemies.push_back(enemy);
+}
+void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player) {
+    for (int i = 0; i < 3; i++) {
+        Enemy enemy{};
+        enemy.id = i + 2;
+        enemy.guard_zone = i;
+        enemy.world_pos = arena.tile_to_world(enemy.guard_zones[enemy.guard_zone]);
+        enemy.velocity = {160,160};
+        enemy.size = 26.f;
+        enemy.dead = false;
+        enemy.health = 100;
+        enemy.perceptions.spotted_player = false;
+        enemy.forward = {1.0f, 0.f};
+        enemy.type = EnemyType::GUARD;
+        enemy.current_flee_zone = enemy.guard_zone + 1;
+        // enemy.setup_patrol_paths(arena);
+        enemy.fsm.state = EnemyState::GUARD;
+        enemy.fsm.on_enter(enemy, arena, player);
+        enemies.push_back(enemy);
+    }
+}
+
+struct GameLevel{
+    Player player;
+    std::vector<Enemy> enemies;
+    std::vector<Bullet> bullets;
+    std::array<ArtefactSet, 6> artefact_tiles;
+    Arena& arena;
+    std::vector<int> door_tiles;
+    void restart_level(){
+      enemies.clear();
+      bullets.clear();
+      door_tiles.clear();
+
+      player.world_pos = {50, 150};
+      player.velocity = {280, 280};
+      player.size = 24.f;
+      player.health = 1000.f;
+      player.team = Team::PLAYER;
+
+      spawn_enemy_A(enemies, arena, player);
+      spawn_enemy_A(enemies, arena, player);
+      spawn_enemy_B(enemies, arena, player);
+      enemies[0].setup_guard_zones(arena);
+      enemies[0].id = 0; enemies[1].id = 1;
+
+      // setup artefacts
+      artefact_tiles = generate_artefacts(arena, player, enemies);
+      auto cur_time = std::chrono::steady_clock::now();
+      enemies[0].last_shot_at = cur_time;
+    }
+};
+
+
+void update(Arena& arena, float dt, GameLevel& level, input_state input) {
+    update_player(arena, level.player, input, dt);
+    update_enemies(arena, level.bullets, level.player, level.enemies, dt);
     // spawn bullets
     if (input.firing) {
-        spawn_bullet(bullets, player.world_pos, input.mouse_dir, Team::PLAYER);
+        spawn_bullet(level.bullets, level.player.world_pos, input.mouse_dir, Team::PLAYER);
     }
     if (input.interract) {
-        arena.close_door(player.world_pos,player.size,closed_door_tiles,enemies);
+        arena.close_door(level.player.world_pos,level.player.size,level.door_tiles,level.enemies);
     }
-    update_bullets(arena, bullets, player, enemies, dt);
-    remove_dead_entities(bullets, enemies);
-    update_artefacts(artefact_sets, player);
+    update_bullets(arena, level.bullets, level.player, level.enemies, dt);
+    remove_dead_entities(level.bullets, level.enemies);
+    update_artefacts(level.artefact_tiles, level.player);
 }
 
 void draw_fov_cone(Enemy& enemy, Arena& arena) {
@@ -264,43 +336,7 @@ void draw_artefacts(std::array<ArtefactSet, 6>& artefact_sets) {
 };
 
 
-void spawn_enemy_A(std::vector<Enemy>& enemies, Arena& arena, Player& player) {
-    Vec2 random_spawn = arena.random_pos();
-    while(random_spawn.distance(player.world_pos) < 128.f){
-      random_spawn = arena.random_pos();
-    }
-    Enemy enemy{};
-    enemy.world_pos = random_spawn;
-    enemy.velocity = {210, 210};
-    enemy.size = 26.f;
-    enemy.dead = false;
-    enemy.health = 100;
-    enemy.perceptions.spotted_player = false;
-    enemy.forward = {1.0f, 0.f};
-    enemy.type = EnemyType::CHASER;
-    enemy.setup_patrol_paths(arena);
-    enemy.fsm.on_enter(enemy, arena, player);
-    enemies.push_back(enemy);
-}
-void spawn_enemy_B(std::vector<Enemy>& enemies, Arena& arena, Player& player) {
-    for (int i = 0; i < 3; i++) {
-        Enemy enemy{};
-        enemy.guard_zone = i;
-        enemy.world_pos = arena.tile_to_world(enemy.guard_zones[enemy.guard_zone]);
-        enemy.velocity = {160,160};
-        enemy.size = 26.f;
-        enemy.dead = false;
-        enemy.health = 100;
-        enemy.perceptions.spotted_player = false;
-        enemy.forward = {1.0f, 0.f};
-        enemy.type = EnemyType::GUARD;
-        enemy.current_flee_zone = enemy.guard_zone + 1;
-        // enemy.setup_patrol_paths(arena);
-        enemy.fsm.state = EnemyState::GUARD;
-        enemy.fsm.on_enter(enemy, arena, player);
-        enemies.push_back(enemy);
-    }
-}
+
 
 Texture2D closed_door;
 
@@ -351,6 +387,7 @@ void draw_health_bars(Enemy& enemy){
   DrawRectangleLines(x, y, width, height, BLACK);
 }
 
+
 int main() {
     SetTargetFPS(120);
     // get path realtive to build-dir
@@ -362,98 +399,79 @@ int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GameAI");
 
     // gameplay setup
-    Player player{};
-    player.world_pos = {50, 150};
-    player.velocity = {280, 280};
-    player.size = 24.f;
-    player.health = 1000.f;
-    player.team = Team::PLAYER;
-
-    std::vector<Enemy> enemies;
-    spawn_enemy_A(enemies, arena, player);
-    spawn_enemy_A(enemies, arena, player);
-    enemies[0].setup_guard_zones(arena);
-
-    spawn_enemy_B(enemies, arena, player);
-
-    // setup artefacts
-    std::array<ArtefactSet, 6> artefact_tiles = generate_artefacts(arena, player, enemies);
-
-    auto cur_time = std::chrono::steady_clock::now();
-    enemies[0].last_shot_at = cur_time;
-
-    std::vector<Bullet> bullets;
+    GameLevel level{.arena = arena};
+    level.restart_level();
 
     // debug = enemy paths and FOV visualisation
     bool draw_debug = false;
 
     // todo - clamp camera to map edges
     Camera2D camera = {0};
-    camera.zoom = 1.f;
+    camera.zoom = 1.25f;
     camera.offset = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
 
     auto tex = LoadTexture(arena_tex.string().c_str());
     const auto closed_door_tex =
         std::filesystem::path(GetApplicationDirectory()) / "assets" / "door_close.png";
     closed_door = LoadTexture(closed_door_tex.string().c_str());
-    std::vector<int> open_door_tiles;
+   
     float draw_hit_timer = 0.0f;
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_R)) {
-            arena.grid[25][15] = !arena.grid[25][15];
+            level.restart_level();
         }
         if (IsKeyPressed(KEY_B)) {
             draw_debug = !draw_debug;
         }
         if (IsKeyPressed(KEY_Q)) {
-            spawn_enemy_A(enemies, arena, player);
+            spawn_enemy_A(level.enemies, arena, level.player);
         }
-
         float dt = GetFrameTime();
-        input_state input = handle_input(camera, player);
-        update(arena, dt, player, enemies, bullets, input, artefact_tiles, open_door_tiles);
-        if (player.crit_timer > 0.f) {
-            player.crit_timer -= dt;
+        input_state input = handle_input(camera, level.player);
+        // update(arena, dt, player, enemies, bullets, input, artefact_tiles, open_door_tiles);
+        update(arena, dt, level, input);
+        if (level.player.crit_timer > 0.f) {
+           level. player.crit_timer -= dt;
         }
         // render
         BeginDrawing();
-        ClearBackground({0, 0, 0, 0});
-        camera.target = {player.world_pos.x, player.world_pos.y};
+        ClearBackground({100, 125, 150, 255});
+        camera.target = {level.player.world_pos.x, level.player.world_pos.y};
         BeginMode2D(camera);
 
         //  todo - stop drawing the grid every frame, draw it once into a texture,
         DrawTexture(tex, 0, 0, {WHITE});
-        draw_artefacts(artefact_tiles);
-        draw_closed_doors(arena, open_door_tiles);
-        for (Bullet& b : bullets) {
+        draw_artefacts(level.artefact_tiles);
+        draw_closed_doors(arena, level.door_tiles);
+        for (Bullet& b : level.bullets) {
             DrawCircle(b.world_pos.x, b.world_pos.y, b.size, BLACK);
         }
-        Vec2 player_top_left = player.world_pos - Vec2{player.size / 2, player.size / 2};
+        Vec2 player_top_left = level.player.world_pos - Vec2{level.player.size / 2, level.player.size / 2};
 
 
-        if (player.crit_timer > 0.f) {
-            DrawText(TextFormat("--%.0f", player.last_dmg), player.world_pos.x, player.world_pos.y,
+        if (level.player.crit_timer > 0.f) {
+            DrawText(TextFormat("--%.0f", level.player.last_dmg), level.player.world_pos.x,level.player.world_pos.y,
                      25, RED);
         }
 
-        DrawRectangleV(*reinterpret_cast<Vector2*>(&player_top_left), {player.size, player.size},
+        DrawRectangleV(*reinterpret_cast<Vector2*>(&player_top_left), {level.player.size, level.player.size},
                        BLUE);
-        for (int i = 0; i < enemies.size(); i++) {
-            auto& enemy = enemies[i];
-             draw_health_bars(enemy);
-            Vec2 enemy_top_left = enemy.world_pos - Vec2{enemy.size / 2, enemy.size / 2};
+        for (int i = 0; i < level.enemies.size(); i++) {
+            auto& enemy = level.enemies[i];
+            draw_health_bars(enemy);
+            Vec2 enemy_top_left = centre_to_top_left(enemy.world_pos,enemy.size);
             DrawRectangleV(*reinterpret_cast<Vector2*>(&enemy_top_left), {enemy.size, enemy.size},
                            colours[(i + 1) % colours.size()]);
             DrawText(TextFormat("%s", get_state(enemy.fsm.state)),
                      enemy.world_pos.x + enemy.size / 2, enemy.world_pos.y - 10, 40, GREEN);
         }
-        DrawRectangleLines(player_top_left.x, player_top_left.y, player.size, player.size,
+        DrawRectangleLines(player_top_left.x, player_top_left.y, level.player.size, level.player.size,
                            RAYWHITE);
-        draw_player_triangle(player, input.mouse_dir);
-        draw_enemy_triangles(enemies);
+        draw_player_triangle(level.player, input.mouse_dir);
+        draw_enemy_triangles(level.enemies);
         if (draw_debug) {
             draw_grid(arena);
-            for (Enemy& enemy : enemies) {
+            for (Enemy& enemy : level.enemies) {
                 draw_fov_cone(enemy, arena);
                
                 for (auto waypoint_pos : enemy.cur_path) {
@@ -461,9 +479,9 @@ int main() {
                 }
             }
         }
-                DrawText(TextFormat("health:%f", player.health), 0, 30, 25, RED);
-        if (!enemies.empty()) {
-            const Enemy& e = enemies[0];
+                DrawText(TextFormat("health:%f", level.player.health), 0, 30, 25, RED);
+        if (!level.enemies.empty()) {
+            const Enemy& e = level.enemies[0];
             DrawText(TextFormat("STATE: %d | GOAL: %d | WP: %d/%d | SEEN: %d | RANGE: %d",
                                 static_cast<int>(e.fsm.state), e.goal_tile, e.cur_waypoint,
                                 static_cast<int>(e.cur_path.size()), e.perceptions.spotted_player,
